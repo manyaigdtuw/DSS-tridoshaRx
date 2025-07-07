@@ -1,0 +1,76 @@
+/* RoleManagement.css */
+.role-management {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.role-management h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+
+.users-list {
+  overflow-x: auto;
+}
+
+.users-list h3 {
+  margin-bottom: 15px;
+  color: #444;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f5f5f5;
+}
+
+select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.message {
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  text-align: center;
+}
+.error {
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  background-color: #fff1f0;
+  color: #ff4d4f;
+  text-align: center;
+}
+
+.loading {
+  text-align: center;
+  padding: 10px;
+  color: #1890ff;
+}
+
+/* Add this if you want to style disabled selects */
+select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

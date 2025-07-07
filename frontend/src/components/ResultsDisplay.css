@@ -1,0 +1,156 @@
+/* Main Container */
+.results-display {
+  width: 100%;
+  margin: 30px 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* Header Section */
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.results-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.results-count {
+  background: #f5f5f5;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #666;
+}
+
+/* Responsive Grid Layout */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Individual Result Cards */
+.result-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eaeaea;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Result Sections */
+.result-section {
+  margin-bottom: 15px;
+}
+
+.result-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #5b46c5;
+  letter-spacing: 0.3px;
+}
+
+.section-content {
+  margin-left: 10px;
+}
+
+/* Disease Name */
+.disease-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 6px;
+  color: #a81c1c;
+  background: #f0f0f0;
+  margin: 8px 0;
+  display: inline-block;
+}
+
+/* Horizontal List Layout */
+.horizontal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* List Items (Pills) */
+.list-item {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.list-item.pill {
+  background: #f5f5f5;
+  color: #444;
+  border: 1px solid #e0e0e0;
+}
+
+/* Hover Effects */
+.result-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+.list-item.pill:hover {
+  background: #eaeaea;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .results-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .results-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  .result-card {
+    padding: 16px;
+  }
+  
+  .list-item {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    border-radius: 14px;
+  }
+  
+  .disease-name {
+    font-size: 1.1rem;
+    padding: 10px 14px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .results-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+}
+
