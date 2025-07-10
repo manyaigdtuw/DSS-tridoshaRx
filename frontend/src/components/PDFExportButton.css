@@ -10,6 +10,11 @@
   transition: background-color 0.3s;
 }
 
+.pdf-export-wrapper {
+  text-align: center;
+  margin-top: 20px;
+}
+
 .pdf-export-button:hover {
   background-color: #45a049;
 }

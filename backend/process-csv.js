@@ -3,7 +3,7 @@ import csv from 'csv-parser';
 import pool from './database.js';
 
 async function processRow(row, pool, maps) {
-  const { diseases, symptoms, medicines, labTests, procedures } = maps;
+  const { diseases, symptoms, medicines, labTests, procedures, lifestyleRecs } = maps;
 
   try {
     // Normalize keys (handle different casing)
@@ -12,6 +12,7 @@ async function processRow(row, pool, maps) {
     const medicine = row.medicines || row.Medicine;
     const labTest = row.lab_tests || row.labTests || row.LabTests;
     const procedure = row.procedures || row.Procedures;
+    const lifestyle = row.lifestyle_recommendations || row.Lifestyle || row['Lifestyle Recommendations'];
 
     if (diseaseName) {
       const clean = diseaseName.trim();
@@ -80,6 +81,20 @@ async function processRow(row, pool, maps) {
       }
     }
 
+    if (lifestyle) {
+      const lifestyleList = lifestyle.split(',');
+      for (const l of lifestyleList) {
+        const trimmed = l.trim();
+        if (trimmed && !lifestyleRecs.has(trimmed)) {
+          const res = await pool.query(
+            'INSERT INTO lifestyle_recommendations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING lifestyle_id',
+            [trimmed]
+          );
+          lifestyleRecs.set(trimmed, res.rows?.[0]?.lifestyle_id || null);
+        }
+      }
+    }
+
     return true;
   } catch (error) {
     console.error(`Error on row: ${JSON.stringify(row)} -> ${error.message}`);
@@ -98,7 +113,8 @@ async function processCSV(filePath) {
     symptoms: new Map(),
     medicines: new Map(),
     labTests: new Map(),
-    procedures: new Map()
+    procedures: new Map(),
+    lifestyleRecs: new Map()
   };
 
   const rows = [];

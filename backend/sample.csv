@@ -1,32 +1,4 @@
-Symptom,Medicine,Disease,LabTests,Procedures
-Heartburn,Avipattikar Churna,Amlapitta,Complete Blood Count (CBC),Vamana
-Nausea,Kamdudha Ras,Prameha,Basic Metabolic Panel (BMP),Virechana
-Sour belching,Nishamalaki,Jwara,Comprehensive Metabolic Panel (CMP),Basti
-Indigestion,Chandraprabha Vati,Arsha,Liver Function Test (LFT),Nasya
-Frequent urination,Sudarshan Churna,Shwasa,Kidney Function Test (KFT),Raktamokshana
-Thirst,Tribhuvan Kirti Ras,Kasa,Lipid Profile,Abhyanga
-Fatigue,Arshoghni Vati,Agnimandya,Blood Glucose (Fasting),Swedana
-High temperature,Triphala Guggulu,Amavata,Blood Glucose (Random),Udvartana
-Chills,Shwas Kuthar Ras,Kushtha,Hemoglobin A1C (HbA1c),Shirodhara
-Body ache,Sitopaladi Churna,Grahani,"Thyroid Function Test (T3, T4, TSH)",Pizhichil
-Painful defecation,Talisadi Churna,,C-Reactive Protein (CRP),Kati Basti
-Bleeding,Vasarishta,,Erythrocyte Sedimentation Rate (ESR),Netra Tarpana
-Itching,Hingvastak Churna,,Vitamin D Test,Shirovasti
-Breathlessness,Chitrakadi Vati,,Vitamin B12 Test,Janu Basti
-Wheezing,Simhanada Guggulu,,Iron Studies,Hridaya Basti
-Chest tightness,Rasnadi Guggulu,,Urinalysis,
-Dry cough,Arogyavardhini Vati,,Urine Culture,
-Wet cough,Manjishtha Churna,,Urine Microalbumin,
-Throat irritation,Bilwadi Churna,,Pregnancy Test (hCG),
-Heaviness,Kutajghan Vati,,HIV Test,
-Bloating,,,Hepatitis B Panel,
-Loss of appetite,,,Hepatitis C Test,
-Joint pain,,,COVID-19 RT-PCR,
-Stiffness,,,Dengue NS1 Antigen,
-Swelling,,,Widal Test,
-Dry skin,,,Malaria Smear,
-Rashes,,,Troponin Test,
-Discoloration,,,Rheumatoid Factor (RF),
-Irregular stools,,,ANA Test,
-,,,D-Dimer,
-,,,PT/INR,
+LabTests
+Endoscopy
+pH monitoring
+H. pylori test

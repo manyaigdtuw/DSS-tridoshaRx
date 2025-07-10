@@ -63,6 +63,7 @@ const App = () => {
         { key: 'labTests', url: '/api/count/lab-tests' },
         { key: 'procedures', url: '/api/count/procedures' },
         { key: 'users', url: '/api/count/users' },
+        { key: 'lifestyle', url: '/api/count/lifestyle' },
       ];
 
       const newCounts = {};
@@ -203,6 +204,7 @@ const App = () => {
                       <div className="box"><h3>Lab Tests</h3><p className="count">{counts.labTests}</p></div>
                       <div className="box"><h3>Procedures</h3><p className="count">{counts.procedures}</p></div>
                       <div className="box"><h3>Users</h3><p className="count">{counts.users}</p></div>
+                      <div className="box"><h3>Lifestyle Recommendations</h3><p className="count">{counts.lifestyle}</p></div>
                     </div>
                   )
                 }

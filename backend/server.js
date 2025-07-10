@@ -261,7 +261,34 @@ app.get('/api/procedures', async (req, res) => {
   }
 });
 
+// Get all lifestyle recommendations
+app.get('/api/lifestyle-recommendations', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM lifestyle_recommendations ORDER BY name');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch lifestyle recommendations" });
+  }
+});
+
 // mapping api's cutus 
+
+
+app.post('/api/map-lifestyle', async (req, res) => {
+  const { disease_id, lifestyle_ids } = req.body;
+  try {
+    for (const lifestyle_id of lifestyle_ids) {
+      await pool.query(
+        'INSERT INTO disease_lifestyle (disease_id, lifestyle_id) VALUES ($1, $2)',
+        [disease_id, lifestyle_id]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to map lifestyle recommendations" });
+  }
+});
+
 
 app.post('/api/map-symptoms', async (req, res) => {
   const { disease_id, symptom_ids } = req.body;
@@ -398,6 +425,25 @@ app.get('/api/count/users', async (req, res) => {
   }
 });
 
+
+app.get('/api/count/lifestyle', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT COUNT(*) FROM lifestyle_recommendations');
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    console.error('Detailed error counting lifestyle recommendations:', {
+      error: err.message,
+      stack: err.stack,
+      query: err.query,
+      parameters: err.parameters
+    });
+    res.status(500).json({ 
+      error: "Failed to count lifestyle recommendations",
+      details: err.message 
+    });
+  }
+});
+
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -409,9 +455,9 @@ app.get('/api/search', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `
-      SELECT 
+      `SELECT 
         d.name AS disease,
+        d.disease_id,
         ARRAY(
           SELECT s.name
           FROM DiseaseSymptoms ds
@@ -435,7 +481,13 @@ app.get('/api/search', async (req, res) => {
           FROM DiseaseProcedures dp
           JOIN Procedures p ON dp.procedure_id = p.procedure_id
           WHERE dp.disease_id = d.disease_id
-        ) AS procedures
+        ) AS procedures,
+        ARRAY(
+          SELECT lr.name
+          FROM disease_lifestyle dl
+          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
+          WHERE dl.disease_id = d.disease_id
+        ) AS lifestyle_recommendations
       FROM Diseases d
       WHERE EXISTS (
         SELECT 1
@@ -443,8 +495,7 @@ app.get('/api/search', async (req, res) => {
         JOIN Symptoms s ON ds.symptom_id = s.symptom_id
         WHERE ds.disease_id = d.disease_id
           AND LOWER(s.name) LIKE $1
-      )
-      `,
+      )`,
       [searchTerm]
     );
 
@@ -461,16 +512,17 @@ const checkDuplicate = async (table, name) => {
 };
 
 // new entry end point bbg <3
+// Update the add-entry endpoint
 app.post('/api/add-entry', async (req, res) => {
   const { type, name } = req.body;
 
-  
   const tableMap = {
     symptom: 'symptoms',
     disease: 'diseases',
     medicine: 'medicines',
     labdiagnosis: 'labdiagnoses',
-    procedure: 'procedures'
+    procedure: 'procedures',
+    lifestyle: 'lifestyle_recommendations'
   };
 
   const table = tableMap[type];

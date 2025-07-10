@@ -154,3 +154,26 @@
   }
 }
 
+/* Add to your existing ResultsDisplay.css */
+
+/* Lifestyle specific styles */
+.list-item.pill.lifestyle {
+  background-color: #e8f5e9; /* Light green background */
+  border: 1px solid #a5d6a7;
+  color: #2e7d32; /* Dark green text */
+}
+
+.list-item.pill.lifestyle:hover {
+  background-color: #c8e6c9;
+}
+
+/* For better spacing between sections */
+.result-section {
+  margin-bottom: 20px;
+}
+
+/* If you want to add icons */
+.section-title[data-section="lifestyle"]::before {
+  content: "🌿";
+  margin-right: 8px;
+}

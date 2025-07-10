@@ -95,6 +95,20 @@ const ResultsDisplay = ({ results }) => {
                 </div>
               </div>
             )}
+
+            {/* Lifestyle Recommendations Section */}
+            {result.lifestyle_recommendations && result.lifestyle_recommendations.length > 0 && (
+              <div className="result-section">
+                <h3 className="section-title">Lifestyle Recommendations</h3>
+                <div className="section-content horizontal-list">
+                  {result.lifestyle_recommendations.map((recommendation, i) => (
+                    <div key={i} className="list-item pill lifestyle">
+                      {recommendation}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
