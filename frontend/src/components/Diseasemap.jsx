@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import './Diseasemap.css'; 
+import AdminExportMappings from './AdminExportMappings';
+
 
 const API_BASE = 'http://localhost:5000/api';
 const MappingPage = () => {
@@ -212,6 +214,8 @@ const MappingPage = () => {
               )}
             </>
           )}
+
+           <AdminExportMappings />
         </div>
       </main>
     

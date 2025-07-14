@@ -15,24 +15,34 @@ const SymptomChecker = () => {
   const [showChatbot, setShowChatbot] = useState(false); // New state for chatbot visibility
   const navigate = useNavigate();
 
-  const handleSearch = async (searchTerm) => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      return;
-    }
+ const handleSearch = async (searchTerm) => {
+  if (!searchTerm.trim()) {
+    setSearchResults([]);
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/search`, {
-        params: { term: searchTerm }
-      });
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error("Search failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+  try {
+    // Split by commas and clean up the terms
+    const terms = searchTerm.split(',')
+      .map(term => term.trim())
+      .filter(term => term.length > 0);
+
+    // Send as array if multiple terms, single string if one term
+    const params = terms.length > 1 ? { term: terms } : { term: terms[0] };
+    
+    const response = await axios.get(`${API_BASE_URL}/api/search`, {
+      params: params
+    });
+    
+    setSearchResults(response.data);
+  } catch (error) {
+    console.error("Search failed:", error);
+    setSearchResults([]);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleLogout = async () => {
     try {

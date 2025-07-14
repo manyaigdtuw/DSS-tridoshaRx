@@ -444,6 +444,49 @@ app.get('/api/count/lifestyle', async (req, res) => {
   }
 });
 
+app.get('/api/export-mappings', async (req, res) => {
+  try {
+    // Query to get all disease mappings
+    const query = `
+      SELECT 
+        d.name AS disease,
+        ARRAY_TO_STRING(ARRAY(
+          SELECT s.name FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ), ', ') AS symptoms,
+        ARRAY_TO_STRING(ARRAY(
+          SELECT m.name FROM DiseaseMedicines dm
+          JOIN Medicines m ON dm.medicine_id = m.medicine_id
+          WHERE dm.disease_id = d.disease_id
+        ), ', ') AS medicines,
+        ARRAY_TO_STRING(ARRAY(
+          SELECT l.name FROM DiseaseLabDiagnoses dld
+          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
+          WHERE dld.disease_id = d.disease_id
+        ), ', ') AS lab_tests,
+        ARRAY_TO_STRING(ARRAY(
+          SELECT p.name FROM DiseaseProcedures dp
+          JOIN Procedures p ON dp.procedure_id = p.procedure_id
+          WHERE dp.disease_id = d.disease_id
+        ), ', ') AS procedures,
+        ARRAY_TO_STRING(ARRAY(
+          SELECT lr.name FROM disease_lifestyle dl
+          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
+          WHERE dl.disease_id = d.disease_id
+        ), ', ') AS lifestyle_recommendations
+      FROM Diseases d
+      ORDER BY d.name
+    `;
+
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error exporting mappings:', err);
+    res.status(500).json({ error: "Failed to export mappings" });
+  }
+});
+
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -451,11 +494,16 @@ app.get('/api/search', async (req, res) => {
     return res.status(400).json({ error: "Search term is required" });
   }
 
-  const searchTerm = `%${term.toLowerCase()}%`;
-
   try {
-    const result = await pool.query(
-      `SELECT 
+    
+    const terms = Array.isArray(term) ? term : term.split(',').map(t => t.trim()).filter(t => t);
+    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
+
+   
+    const symptomConditions = searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
+
+    const query = `
+      SELECT 
         d.name AS disease,
         d.disease_id,
         ARRAY(
@@ -487,18 +535,29 @@ app.get('/api/search', async (req, res) => {
           FROM disease_lifestyle dl
           JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
           WHERE dl.disease_id = d.disease_id
-        ) AS lifestyle_recommendations
+        ) AS lifestyle_recommendations,
+        (
+          SELECT COUNT(*) 
+          FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+          AND (${symptomConditions})
+        ) AS matched_symptoms_count
       FROM Diseases d
       WHERE EXISTS (
         SELECT 1
         FROM DiseaseSymptoms ds
         JOIN Symptoms s ON ds.symptom_id = s.symptom_id
         WHERE ds.disease_id = d.disease_id
-          AND LOWER(s.name) LIKE $1
-      )`,
-      [searchTerm]
-    );
+        AND (${symptomConditions})
+      )
+      ORDER BY matched_symptoms_count DESC, d.name
+    `;
 
+    console.log("Executing query:", query);
+    console.log("With parameters:", searchPatterns);
+
+    const result = await pool.query(query, searchPatterns);
     res.json(result.rows);
   } catch (err) {
     console.error('Error performing symptom-based search:', err);
