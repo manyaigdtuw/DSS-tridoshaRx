@@ -25,16 +25,10 @@ const Sidebar = ({ userRole }) => {
             </Link>
           </li>
           <li>
-            <Link to="/add-entry">
-              <i className="icon-add"></i>
-              <span>Add New Entries</span>
-            </Link>
-          </li>
-          <li>
-            <Link to="/graphs">
-              <i className="icon-graphs"></i>
-              <span>Graphs & Analytics</span>
-            </Link>
+            <Link to="/DiseaseMappings">
+                <i className="icon-admin"></i>
+                <span>View Mapped Diseases</span>
+              </Link>
           </li>
           {userRole === 'admin' && (
             <li>
@@ -42,10 +36,10 @@ const Sidebar = ({ userRole }) => {
                 <i className="icon-admin"></i>
                 <span>Role Management</span>
               </Link>
-              <Link to="/DiseaseMappings">
-                <i className="icon-admin"></i>
-                <span>View Mapped Diseases</span>
-              </Link>
+              <Link to="/add-entry">
+              <i className="icon-add"></i>
+              <span>Add New Entries</span>
+            </Link>
             </li>
           )} 
         </ul>

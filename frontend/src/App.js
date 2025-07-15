@@ -15,7 +15,6 @@ import AddEntryPage from './components/AddEntryPage';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import RoleManagement from './components/RoleManagement';
-import DiseaseGraphContainer from './components/DiseaseGraphContainer';
 import  DiseaseMappings from './components/DiseaseMappings';
 import './App.css';
 
@@ -211,7 +210,12 @@ const App = () => {
                 }
               />
               <Route path="/mapping" element={<MappingPage />} />
-              <Route path="/graphs" element={<DiseaseGraphContainer />} />
+              <Route
+                path="DiseaseMappings"
+                element={
+                    <DiseaseMappings />
+                }
+              />
               <Route
                 path="/add-entry"
                 element={
@@ -226,14 +230,6 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <RoleManagement />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="DiseaseMappings"
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <DiseaseMappings />
                   </ProtectedRoute>
                 }
               />
