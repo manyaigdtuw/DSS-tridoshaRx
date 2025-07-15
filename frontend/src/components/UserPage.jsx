@@ -15,7 +15,7 @@ const SymptomChecker = () => {
   const [showChatbot, setShowChatbot] = useState(false); // New state for chatbot visibility
   const navigate = useNavigate();
 
- const handleSearch = async (searchTerm) => {
+const handleSearch = async (searchTerm) => {
   if (!searchTerm.trim()) {
     setSearchResults([]);
     return;
@@ -23,16 +23,14 @@ const SymptomChecker = () => {
 
   setIsLoading(true);
   try {
-    // Split by commas and clean up the terms
+    // Clean up the terms and join with commas
     const terms = searchTerm.split(',')
       .map(term => term.trim())
-      .filter(term => term.length > 0);
+      .filter(term => term.length > 0)
+      .join(','); // Join with commas for backend
 
-    // Send as array if multiple terms, single string if one term
-    const params = terms.length > 1 ? { term: terms } : { term: terms[0] };
-    
     const response = await axios.get(`${API_BASE_URL}/api/search`, {
-      params: params
+      params: { term: terms }
     });
     
     setSearchResults(response.data);

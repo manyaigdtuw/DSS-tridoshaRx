@@ -12,11 +12,6 @@ const SearchBar = ({ onSearch }) => {
   const handleInputChange = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
-    
-    // Real-time search with debouncing
-    if (value.length >= 2 || value.length === 0) {
-      onSearch(value);
-    }
   };
 
   const handleClear = () => {

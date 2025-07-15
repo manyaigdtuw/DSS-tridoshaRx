@@ -42,8 +42,12 @@ const Sidebar = ({ userRole }) => {
                 <i className="icon-admin"></i>
                 <span>Role Management</span>
               </Link>
+              <Link to="/DiseaseMappings">
+                <i className="icon-admin"></i>
+                <span>View Mapped Diseases</span>
+              </Link>
             </li>
-          )}
+          )} 
         </ul>
       </nav>
       <div className="sidebar-footer">

@@ -16,6 +16,7 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import RoleManagement from './components/RoleManagement';
 import DiseaseGraphContainer from './components/DiseaseGraphContainer';
+import  DiseaseMappings from './components/DiseaseMappings';
 import './App.css';
 
 const App = () => {
@@ -225,6 +226,14 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <RoleManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="DiseaseMappings"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DiseaseMappings />
                   </ProtectedRoute>
                 }
               />

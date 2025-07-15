@@ -554,8 +554,7 @@ app.get('/api/search', async (req, res) => {
       ORDER BY matched_symptoms_count DESC, d.name
     `;
 
-    console.log("Executing query:", query);
-    console.log("With parameters:", searchPatterns);
+    console.log("Executing With parameters:", searchPatterns);
 
     const result = await pool.query(query, searchPatterns);
     res.json(result.rows);
