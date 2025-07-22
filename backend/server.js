@@ -487,6 +487,7 @@ app.get('/api/export-mappings', async (req, res) => {
   }
 });
 
+/*
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -563,6 +564,90 @@ app.get('/api/search', async (req, res) => {
     res.status(500).json({ error: "Failed to perform search" });
   }
 });
+*/
+
+app.get('/api/search', async (req, res) => {
+  const { term } = req.query;
+
+  if (!term || term.trim() === "") {
+    return res.status(400).json({ error: "Search term is required" });
+  }
+
+  try {
+    const terms = Array.isArray(term)
+      ? term
+      : term.split(',').map(t => t.trim()).filter(t => t);
+
+    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
+    const symptomConditions = searchPatterns
+      .map((_, i) => `LOWER(s.name) LIKE $${i + 1}`)
+      .join(' OR ');
+
+    // Total number of symptoms to match (for AND logic)
+    const requiredMatchCount = terms.length;
+
+    const query = `
+      SELECT 
+        d.name AS disease,
+        d.disease_id,
+        ARRAY(
+          SELECT s.name
+          FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ) AS symptoms,
+        ARRAY(
+          SELECT m.name
+          FROM DiseaseMedicines dm
+          JOIN Medicines m ON dm.medicine_id = m.medicine_id
+          WHERE dm.disease_id = d.disease_id
+        ) AS medicines,
+        ARRAY(
+          SELECT l.name
+          FROM DiseaseLabDiagnoses dld
+          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
+          WHERE dld.disease_id = d.disease_id
+        ) AS lab_tests,
+        ARRAY(
+          SELECT p.name
+          FROM DiseaseProcedures dp
+          JOIN Procedures p ON dp.procedure_id = p.procedure_id
+          WHERE dp.disease_id = d.disease_id
+        ) AS procedures,
+        ARRAY(
+          SELECT lr.name
+          FROM disease_lifestyle dl
+          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
+          WHERE dl.disease_id = d.disease_id
+        ) AS lifestyle_recommendations,
+        (
+          SELECT COUNT(DISTINCT s.name) 
+          FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+          AND (${symptomConditions})
+        ) AS matched_symptoms_count
+      FROM Diseases d
+      WHERE (
+        SELECT COUNT(DISTINCT s.name)
+        FROM DiseaseSymptoms ds
+        JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+        WHERE ds.disease_id = d.disease_id
+        AND (${symptomConditions})
+      ) = ${requiredMatchCount}
+      ORDER BY matched_symptoms_count DESC, d.name
+    `;
+
+    console.log("Executing search for all symptoms match:", searchPatterns);
+
+    const result = await pool.query(query, searchPatterns);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error performing strict symptom-based search:', err);
+    res.status(500).json({ error: "Failed to perform search" });
+  }
+});
+
 
 const checkDuplicate = async (table, name) => {
   const result = await pool.query(`SELECT * FROM ${table} WHERE name ILIKE $1`, [name]);
