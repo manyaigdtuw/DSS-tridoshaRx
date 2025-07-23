@@ -583,7 +583,7 @@ app.get('/api/search', async (req, res) => {
 });
 */
 
-/* new api search v2
+// current version
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -665,9 +665,9 @@ app.get('/api/search', async (req, res) => {
     res.status(500).json({ error: "Failed to perform search" });
   }
 });
-*/
 
-// version 3 search api 
+
+/* version 3 search api 
 app.get('/api/search', async (req, res) => {
   try {
     const { term } = req.query;
@@ -748,7 +748,7 @@ app.get('/api/search', async (req, res) => {
     res.status(500).json({ error: "Failed to perform search" });
   }
 });
-
+*/
 
 
 const checkDuplicate = async (table, name) => {
