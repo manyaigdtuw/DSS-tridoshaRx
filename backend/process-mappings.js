@@ -2,13 +2,27 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import pool from './database.js';
 
+
+function normalizeSymptomName(raw) {
+  if (!raw) return '';
+  let norm = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (symptomSynonymMap[norm]) {
+    norm = symptomSynonymMap[norm];
+  }
+  return norm;
+}
+
+function normalize(str) {
+  if (!str) return '';
+  return str.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 async function processMappings(filePath) {
   if (!fs.existsSync(filePath)) {
     console.error(`Error: File not found at ${filePath}`);
     process.exit(1);
   }
 
-  // Maps to store name-to-id mappings
   const maps = {
     diseases: new Map(),
     symptoms: new Map(),
@@ -23,7 +37,6 @@ async function processMappings(filePath) {
 
   console.log('Starting CSV processing for mappings...');
 
-  // First read the CSV file
   await new Promise((resolve) => {
     fs.createReadStream(filePath)
       .pipe(csv())
@@ -31,10 +44,9 @@ async function processMappings(filePath) {
       .on('end', resolve);
   });
 
-  // Process each row - first create entries if they don't exist
   for (const row of rows) {
     try {
-      // Normalize keys (handle different casing)
+      
       const diseaseName = row.disease || row.Disease;
       const symptoms = row.symptoms || row.Symptom;
       const medicines = row.medicines || row.Medicine;
@@ -42,96 +54,119 @@ async function processMappings(filePath) {
       const procedures = row.procedures || row.Procedures;
       const lifestyle = row.lifestyle_recommendations || row.Lifestyle || row['Lifestyle Recommendations'];
 
-      // Process disease
+      // Disease
       if (diseaseName) {
-        const cleanDisease = diseaseName.trim();
+        const cleanDisease = normalize(diseaseName);
         if (cleanDisease && !maps.diseases.has(cleanDisease)) {
-          const res = await pool.query(
+          let res = await pool.query(
             'INSERT INTO Diseases (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING disease_id',
             [cleanDisease]
           );
-          if (res.rows[0]) {
-            maps.diseases.set(cleanDisease, res.rows[0].disease_id);
+          let diseaseId = res.rows[0]?.disease_id;
+          if (!diseaseId) {
+            const selectRes = await pool.query('SELECT disease_id FROM Diseases WHERE name = $1', [cleanDisease]);
+            diseaseId = selectRes.rows[0]?.disease_id;
           }
+          if (diseaseId) maps.diseases.set(cleanDisease, diseaseId);
         }
       }
 
-      // Process symptoms
+      // Symptoms
       if (symptoms) {
         const symptomList = symptoms.split(',').map(s => s.trim()).filter(s => s);
-        for (const symptom of symptomList) {
+        for (const symptomRaw of symptomList) {
+          const symptom = normalizeSymptomName(symptomRaw);
           if (!maps.symptoms.has(symptom)) {
-            const res = await pool.query(
+            let res = await pool.query(
               'INSERT INTO Symptoms (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING symptom_id',
               [symptom]
             );
-            if (res.rows[0]) {
-              maps.symptoms.set(symptom, res.rows[0].symptom_id);
+            let id = res.rows[0]?.symptom_id;
+            if (!id) {
+              const sel = await pool.query('SELECT symptom_id FROM Symptoms WHERE name = $1', [symptom]);
+              id = sel.rows[0]?.symptom_id;
             }
+            if (id) maps.symptoms.set(symptom, id);
           }
         }
       }
 
-      // Process medicines (similar pattern for other entities)
+      // Medicines
       if (medicines) {
         const medicineList = medicines.split(',').map(m => m.trim()).filter(m => m);
-        for (const medicine of medicineList) {
+        for (const medicineRaw of medicineList) {
+          const medicine = normalize(medicineRaw);
           if (!maps.medicines.has(medicine)) {
-            const res = await pool.query(
+            let res = await pool.query(
               'INSERT INTO Medicines (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING medicine_id',
               [medicine]
             );
-            if (res.rows[0]) {
-              maps.medicines.set(medicine, res.rows[0].medicine_id);
+            let id = res.rows[0]?.medicine_id;
+            if (!id) {
+              const sel = await pool.query('SELECT medicine_id FROM Medicines WHERE name = $1', [medicine]);
+              id = sel.rows[0]?.medicine_id;
             }
+            if (id) maps.medicines.set(medicine, id);
           }
         }
       }
 
-      // Process lab tests
+      // Lab Tests
       if (labTests) {
         const labTestList = labTests.split(',').map(l => l.trim()).filter(l => l);
-        for (const labTest of labTestList) {
+        for (const labTestRaw of labTestList) {
+          const labTest = normalize(labTestRaw);
           if (!maps.labTests.has(labTest)) {
-            const res = await pool.query(
+            let res = await pool.query(
               'INSERT INTO LabDiagnoses (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING lab_id',
               [labTest]
             );
-            if (res.rows[0]) {
-              maps.labTests.set(labTest, res.rows[0].lab_id);
+            let id = res.rows[0]?.lab_id;
+            if (!id) {
+              const sel = await pool.query('SELECT lab_id FROM LabDiagnoses WHERE name = $1', [labTest]);
+              id = sel.rows[0]?.lab_id;
             }
+            if (id) maps.labTests.set(labTest, id);
           }
         }
       }
 
-      // Process procedures
+      // Procedures
       if (procedures) {
         const procedureList = procedures.split(',').map(p => p.trim()).filter(p => p);
-        for (const procedure of procedureList) {
+        for (const procedureRaw of procedureList) {
+          const procedure = normalize(procedureRaw);
           if (!maps.procedures.has(procedure)) {
-            const res = await pool.query(
+            let res = await pool.query(
               'INSERT INTO Procedures (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING procedure_id',
               [procedure]
             );
-            if (res.rows[0]) {
-              maps.procedures.set(procedure, res.rows[0].procedure_id);
+            let id = res.rows[0]?.procedure_id;
+            if (!id) {
+              const sel = await pool.query('SELECT procedure_id FROM Procedures WHERE name = $1', [procedure]);
+              id = sel.rows[0]?.procedure_id;
             }
+            if (id) maps.procedures.set(procedure, id);
           }
         }
       }
 
-      // Process lifestyle recommendations
+      // Lifestyle Recommendations
       if (lifestyle) {
         const lifestyleList = lifestyle.split(',').map(l => l.trim()).filter(l => l);
-        for (const rec of lifestyleList) {
+        for (const recRaw of lifestyleList) {
+          const rec = normalize(recRaw);
           if (!maps.lifestyleRecs.has(rec)) {
-            const res = await pool.query(
+            let res = await pool.query(
               'INSERT INTO lifestyle_recommendations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING lifestyle_id',
               [rec]
             );
-            if (res.rows[0]) {
-              maps.lifestyleRecs.set(rec, res.rows[0].lifestyle_id);
+            let id = res.rows[0]?.lifestyle_id;
+            if (!id) {
+              const sel = await pool.query('SELECT lifestyle_id FROM lifestyle_recommendations WHERE name = $1', [rec]);
+              id = sel.rows[0]?.lifestyle_id;
             }
+            if (id) maps.lifestyleRecs.set(rec, id);
           }
         }
       }
@@ -144,22 +179,22 @@ async function processMappings(filePath) {
 
   console.log(`Processed ${successCount}/${rows.length} rows for entries.`);
 
-  // Now create the mappings
   let mappingSuccessCount = 0;
   for (const row of rows) {
     try {
-      const diseaseName = (row.disease || row.Disease).trim();
+      const diseaseName = normalize(row.disease || row.Disease);
       const diseaseId = maps.diseases.get(diseaseName);
-      
+
       if (!diseaseId) {
         console.warn(`No disease ID found for ${diseaseName}, skipping mappings`);
         continue;
       }
 
-      // Map symptoms
+      
       if (row.symptoms) {
         const symptomList = row.symptoms.split(',').map(s => s.trim()).filter(s => s);
-        for (const symptom of symptomList) {
+        for (const symptomRaw of symptomList) {
+          const symptom = normalizeSymptomName(symptomRaw);
           const symptomId = maps.symptoms.get(symptom);
           if (symptomId) {
             await pool.query(
@@ -170,10 +205,10 @@ async function processMappings(filePath) {
         }
       }
 
-      // Map medicines
       if (row.medicines) {
         const medicineList = row.medicines.split(',').map(m => m.trim()).filter(m => m);
-        for (const medicine of medicineList) {
+        for (const medicineRaw of medicineList) {
+          const medicine = normalize(medicineRaw);
           const medicineId = maps.medicines.get(medicine);
           if (medicineId) {
             await pool.query(
@@ -184,10 +219,10 @@ async function processMappings(filePath) {
         }
       }
 
-      // Map lab tests
       if (row.lab_tests) {
         const labTestList = row.lab_tests.split(',').map(l => l.trim()).filter(l => l);
-        for (const labTest of labTestList) {
+        for (const labTestRaw of labTestList) {
+          const labTest = normalize(labTestRaw);
           const labId = maps.labTests.get(labTest);
           if (labId) {
             await pool.query(
@@ -198,10 +233,10 @@ async function processMappings(filePath) {
         }
       }
 
-      // Map procedures
       if (row.procedures) {
         const procedureList = row.procedures.split(',').map(p => p.trim()).filter(p => p);
-        for (const procedure of procedureList) {
+        for (const procedureRaw of procedureList) {
+          const procedure = normalize(procedureRaw);
           const procedureId = maps.procedures.get(procedure);
           if (procedureId) {
             await pool.query(
@@ -212,10 +247,10 @@ async function processMappings(filePath) {
         }
       }
 
-      // Map lifestyle recommendations
       if (row.lifestyle_recommendations) {
         const lifestyleList = row.lifestyle_recommendations.split(',').map(l => l.trim()).filter(l => l);
-        for (const rec of lifestyleList) {
+        for (const recRaw of lifestyleList) {
+          const rec = normalize(recRaw);
           const lifestyleId = maps.lifestyleRecs.get(rec);
           if (lifestyleId) {
             await pool.query(

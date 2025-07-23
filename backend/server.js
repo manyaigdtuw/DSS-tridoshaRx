@@ -68,6 +68,23 @@ app.put('/api/users/role', authenticateToken, async (req, res) => {
   }
 });
 
+
+// Add to your server.js
+app.get('/api/symptom-suggestions', async (req, res) => {
+  const { q } = req.query;
+  try {
+    const result = await pool.query(
+      'SELECT symptom_id, name FROM Symptoms WHERE LOWER(name) LIKE $1 ORDER BY name LIMIT 10',
+      [`%${(q || '').toLowerCase()}%`]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching symptom suggestions:', err);
+    res.status(500).json({ error: "Failed to fetch symptom suggestions" });
+  }
+});
+
+
 // Promote existing user to admin/deo (admin only)
 app.put('/api/users/promote', authenticateToken, async (req, res) => {
   if (req.user.role !== 'admin') {
@@ -487,7 +504,7 @@ app.get('/api/export-mappings', async (req, res) => {
   }
 });
 
-/*
+/* search api v1 or based
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -566,6 +583,7 @@ app.get('/api/search', async (req, res) => {
 });
 */
 
+/* new api search v2
 app.get('/api/search', async (req, res) => {
   const { term } = req.query;
 
@@ -647,6 +665,90 @@ app.get('/api/search', async (req, res) => {
     res.status(500).json({ error: "Failed to perform search" });
   }
 });
+*/
+
+// version 3 search api 
+app.get('/api/search', async (req, res) => {
+  try {
+    const { term } = req.query;
+
+    if (!term || term.trim() === "") {
+      return res.status(400).json({ error: "Search term is required" });
+    }
+
+    
+    const terms = Array.isArray(term)
+      ? term
+      : term.split(',').map((t) => t.trim()).filter((t) => t);
+
+    if (terms.length === 0) {
+      return res.status(400).json({ error: "No valid symptoms provided" });
+    }
+
+    
+    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
+
+    
+    const existsClauses = searchPatterns
+      .map((_, i) => `
+        EXISTS (
+          SELECT 1 FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+          AND LOWER(s.name) LIKE $${i + 1}
+        )
+      `)
+      .join(' AND ');
+
+    
+    const query = `
+      SELECT 
+        d.name AS disease,
+        d.disease_id,
+        ARRAY(
+          SELECT s.name
+          FROM DiseaseSymptoms ds
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ) AS symptoms,
+        ARRAY(
+          SELECT m.name
+          FROM DiseaseMedicines dm
+          JOIN Medicines m ON dm.medicine_id = m.medicine_id
+          WHERE dm.disease_id = d.disease_id
+        ) AS medicines,
+        ARRAY(
+          SELECT l.name
+          FROM DiseaseLabDiagnoses dld
+          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
+          WHERE dld.disease_id = d.disease_id
+        ) AS lab_tests,
+        ARRAY(
+          SELECT p.name
+          FROM DiseaseProcedures dp
+          JOIN Procedures p ON dp.procedure_id = p.procedure_id
+          WHERE dp.disease_id = d.disease_id
+        ) AS procedures,
+        ARRAY(
+          SELECT lr.name
+          FROM disease_lifestyle dl
+          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
+          WHERE dl.disease_id = d.disease_id
+        ) AS lifestyle_recommendations
+      FROM Diseases d
+      WHERE ${existsClauses}
+      ORDER BY d.name
+    `;
+
+    const dbResult = await pool.query(query, searchPatterns);
+    res.json(dbResult.rows);
+
+  } catch (err) {
+    console.error('Error performing symptom-based disease search:', err);
+    res.status(500).json({ error: "Failed to perform search" });
+  }
+});
+
 
 
 const checkDuplicate = async (table, name) => {

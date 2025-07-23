@@ -4,47 +4,48 @@ import "./SearchBar.css";
 
 const API_BASE_URL = "http://localhost:5000";
 
-const SearchBar = ({ onSearch }) => {
+const DiseaseSearchBar = ({ onSearch }) => {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [selectedDiseases, setSelectedDiseases] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef();
   const containerRef = useRef();
 
-  // Fetch suggestions matching input (excluding already selected)
+  // Fetch disease suggestions
   useEffect(() => {
     if (!inputValue.trim()) {
       setSuggestions([]);
       return;
     }
-    let ignore = false;
-    const fetch = async () => {
+
+    const fetchDiseases = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/api/symptoms`);
+        const { data } = await axios.get(`${API_BASE_URL}/api/diseases`);
         const filtered = data
-          .filter(
-            (sym) =>
-              sym.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-              !selectedSymptoms.some((s) => s.symptom_id === sym.symptom_id)
+          .filter(disease => 
+            disease.name.toLowerCase().includes(inputValue.toLowerCase()) &&
+            !selectedDiseases.some(d => d.disease_id === disease.disease_id)
           )
           .slice(0, 8);
-        if (!ignore) setSuggestions(filtered);
-      } catch {
+        setSuggestions(filtered);
+      } catch (error) {
+        console.error("Error fetching diseases:", error);
         setSuggestions([]);
       }
     };
-    fetch();
-    return () => { ignore = true; };
-  }, [inputValue, selectedSymptoms]);
+
+    const timer = setTimeout(() => {
+      fetchDiseases();
+    }, 300); // Add slight debounce
+
+    return () => clearTimeout(timer);
+  }, [inputValue, selectedDiseases]);
 
   // Click outside to close dropdown
   useEffect(() => {
     function handleClick(e) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
         setShowSuggestions(false);
       }
     }
@@ -52,61 +53,51 @@ const SearchBar = ({ onSearch }) => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Add chip/tag
-  const addSymptom = (symptom) => {
-    const updated = [...selectedSymptoms, symptom];
-    setSelectedSymptoms(updated);
+  // Add disease
+  const addDisease = (disease) => {
+    const updated = [...selectedDiseases, disease];
+    setSelectedDiseases(updated);
     setInputValue("");
     setSuggestions([]);
-    inputRef.current.focus();
+    inputRef.current?.focus();
     setShowSuggestions(false);
-    onSearch(updated.map((s) => s.name).join(","));
+    onSearch(disease); // Pass the selected disease to parent
   };
 
-  // Remove chip/tag
-  const removeSymptom = (id) => {
-    const updated = selectedSymptoms.filter((s) => s.symptom_id !== id);
-    setSelectedSymptoms(updated);
-    onSearch(updated.map((s) => s.name).join(","));
+  // Remove disease
+  const removeDisease = (id) => {
+    const updated = selectedDiseases.filter(d => d.disease_id !== id);
+    setSelectedDiseases(updated);
+     onSearch(null); 
   };
 
-  // Keyboard navigation and backspace to remove
+  // Keyboard navigation
   const handleKeyDown = (e) => {
-    if (
-      e.key === "Backspace" &&
-      !inputValue &&
-      selectedSymptoms.length
-    ) {
-      removeSymptom(selectedSymptoms[selectedSymptoms.length - 1].symptom_id);
+    if (e.key === "Backspace" && !inputValue && selectedDiseases.length) {
+      removeDisease(selectedDiseases[selectedDiseases.length - 1].disease_id);
     }
     if (e.key === "ArrowDown" && suggestions.length) {
-      document.getElementById("autocomplete-opt-0")?.focus();
+      document.getElementById("disease-autocomplete-opt-0")?.focus();
     }
-  };
-
-  // Submit by Search button
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSearch(selectedSymptoms.map((s) => s.name).join(","));
   };
 
   // Move focus to input after selection
-  const handleSuggestionClick = (s) => {
-    addSymptom(s);
+  const handleSuggestionClick = (disease) => {
+    addDisease(disease);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   return (
-    <form className="search-form" onSubmit={handleSubmit} autoComplete="off">
+    <div className="search-form" autoComplete="off">
       <div className="searchbar-chips-container" ref={containerRef}>
-        {selectedSymptoms.map((s) => (
-          <span className="chip" key={s.symptom_id}>
-            {s.name}
+        {selectedDiseases.map((d) => (
+          <span className="chip" key={d.disease_id}>
+            {d.name}
             <button
               type="button"
               className="chip-remove"
-              aria-label="Remove symptom"
-              onClick={() => removeSymptom(s.symptom_id)}
+              aria-label="Remove disease"
+              onClick={() => removeDisease(d.disease_id)}
             >
               ×
             </button>
@@ -118,7 +109,7 @@ const SearchBar = ({ onSearch }) => {
           type="text"
           value={inputValue}
           placeholder={
-            selectedSymptoms.length === 0 ? "Type a symptom…" : ""
+            selectedDiseases.length === 0 ? "Search for a disease..." : ""
           }
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -138,42 +129,39 @@ const SearchBar = ({ onSearch }) => {
             ×
           </button>
         )}
-        <button className="searchbar-searchbtn" type="submit">
-          Search
-        </button>
         {showSuggestions && suggestions.length > 0 && (
           <ul className="autocomplete-dropdown">
-            {suggestions.map((s, idx) => (
+            {suggestions.map((d, idx) => (
               <li
-                key={s.symptom_id}
-                id={`autocomplete-opt-${idx}`}
+                key={d.disease_id}
+                id={`disease-autocomplete-opt-${idx}`}
                 tabIndex={0}
                 className="autocomplete-option"
-                onClick={() => handleSuggestionClick(s)}
+                onClick={() => handleSuggestionClick(d)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSuggestionClick(s);
+                  if (e.key === "Enter") handleSuggestionClick(d);
                   if (e.key === "ArrowDown" && suggestions[idx + 1])
                     document.getElementById(
-                      `autocomplete-opt-${idx + 1}`
+                      `disease-autocomplete-opt-${idx + 1}`
                     )?.focus();
                   if (e.key === "ArrowUp" && suggestions[idx - 1])
                     document.getElementById(
-                      `autocomplete-opt-${idx - 1}`
+                      `disease-autocomplete-opt-${idx - 1}`
                     )?.focus();
                   if (e.key === "Escape") {
                     setShowSuggestions(false);
-                    inputRef.current.focus();
+                    inputRef.current?.focus();
                   }
                 }}
               >
-                {s.name}
+                {d.name}
               </li>
             ))}
           </ul>
         )}
       </div>
-    </form>
+    </div>
   );
 };
 
-export default SearchBar;
+export default DiseaseSearchBar;
