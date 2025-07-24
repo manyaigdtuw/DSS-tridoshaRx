@@ -18,28 +18,20 @@ const SymptomChecker = () => {
   const [selectedDisease, setSelectedDisease] = useState(null);
   const navigate = useNavigate();
 
-  const handleSearch = async (searchTerm) => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      return;
-    }
+   const handleSearch = async ({ symptoms, medicine_id }) => {
     setIsLoading(true);
     try {
-      const terms = searchTerm.split(',')
-        .map(term => term.trim())
-        .filter(term => term.length > 0)
-        .join(',');
-      const response = await axios.get(`${API_BASE_URL}/api/search`, {
-        params: { term: terms }
-      });
+      const params = { term: symptoms };
+      if (medicine_id) params.medicine_id = medicine_id;
+      const response = await axios.get(`${API_BASE_URL}/api/search`, { params });
       setSearchResults(response.data);
     } catch (error) {
-      console.error("Search failed:", error);
       setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // New function to handle disease selection
   const handleDiseaseSearch = async (disease) => {

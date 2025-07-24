@@ -584,9 +584,9 @@ app.get('/api/search', async (req, res) => {
 */
 
 // current version
+// In server.js (syndicated for symptom search)
 app.get('/api/search', async (req, res) => {
-  const { term } = req.query;
-
+  const { term, medicine_id } = req.query;
   if (!term || term.trim() === "") {
     return res.status(400).json({ error: "Search term is required" });
   }
@@ -595,73 +595,55 @@ app.get('/api/search', async (req, res) => {
     const terms = Array.isArray(term)
       ? term
       : term.split(',').map(t => t.trim()).filter(t => t);
-
     const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
-    const symptomConditions = searchPatterns
-      .map((_, i) => `LOWER(s.name) LIKE $${i + 1}`)
-      .join(' OR ');
-
-    // Total number of symptoms to match (for AND logic)
+    const symptomConditions =
+      searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
     const requiredMatchCount = terms.length;
 
+    let filterQuery = "";
+    let filterParams = [];
+    if (medicine_id) {
+      filterQuery = `
+        AND EXISTS (
+          SELECT 1 FROM DiseaseMedicines dm
+          WHERE dm.disease_id = d.disease_id
+          AND dm.medicine_id = $${searchPatterns.length + 1}
+        )
+      `;
+      filterParams.push(medicine_id);
+    }
+
     const query = `
-      SELECT 
+      SELECT
         d.name AS disease,
         d.disease_id,
         ARRAY(
           SELECT s.name
           FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+            JOIN Symptoms s ON ds.symptom_id = s.symptom_id
           WHERE ds.disease_id = d.disease_id
         ) AS symptoms,
         ARRAY(
           SELECT m.name
           FROM DiseaseMedicines dm
-          JOIN Medicines m ON dm.medicine_id = m.medicine_id
+            JOIN Medicines m ON dm.medicine_id = m.medicine_id
           WHERE dm.disease_id = d.disease_id
-        ) AS medicines,
-        ARRAY(
-          SELECT l.name
-          FROM DiseaseLabDiagnoses dld
-          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
-          WHERE dld.disease_id = d.disease_id
-        ) AS lab_tests,
-        ARRAY(
-          SELECT p.name
-          FROM DiseaseProcedures dp
-          JOIN Procedures p ON dp.procedure_id = p.procedure_id
-          WHERE dp.disease_id = d.disease_id
-        ) AS procedures,
-        ARRAY(
-          SELECT lr.name
-          FROM disease_lifestyle dl
-          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
-          WHERE dl.disease_id = d.disease_id
-        ) AS lifestyle_recommendations,
-        (
-          SELECT COUNT(DISTINCT s.name) 
-          FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-          AND (${symptomConditions})
-        ) AS matched_symptoms_count
+        ) AS medicines
       FROM Diseases d
       WHERE (
         SELECT COUNT(DISTINCT s.name)
         FROM DiseaseSymptoms ds
-        JOIN Symptoms s ON ds.symptom_id = s.symptom_id
+          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
         WHERE ds.disease_id = d.disease_id
         AND (${symptomConditions})
       ) = ${requiredMatchCount}
-      ORDER BY matched_symptoms_count DESC, d.name
+      ${filterQuery}
+      ORDER BY d.name
     `;
-
-    console.log("Executing search for all symptoms match:", searchPatterns);
-
-    const result = await pool.query(query, searchPatterns);
+    const params = [...searchPatterns, ...filterParams];
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error performing strict symptom-based search:', err);
     res.status(500).json({ error: "Failed to perform search" });
   }
 });
@@ -749,6 +731,16 @@ app.get('/api/search', async (req, res) => {
   }
 });
 */
+
+// In server.js
+app.get('/api/medicines', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT medicine_id, name FROM Medicines');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch medicines" });
+  }
+});
 
 
 const checkDuplicate = async (table, name) => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./SearchBar.css";
+import FilterBar from "./FilterBar";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -10,9 +11,24 @@ const SearchBar = ({ onSearch }) => {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [medicines, setMedicines] = useState([]);
+  const [selectedMedicine, setSelectedMedicine] = useState("");
   const inputRef = useRef();
   const containerRef = useRef();
   const recognitionRef = useRef(null);
+
+  // Fetch medicines on mount
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/medicines`);
+        setMedicines(response.data);
+      } catch (error) {
+        console.error("Error fetching medicines:", error);
+      }
+    };
+    fetchMedicines();
+  }, []);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -141,14 +157,20 @@ const SearchBar = ({ onSearch }) => {
     setSuggestions([]);
     inputRef.current.focus();
     setShowSuggestions(false);
-    onSearch(updated.map((s) => s.name).join(","));
+    onSearch({
+      symptoms: updated.map((s) => s.name).join(","),
+      medicine_id: selectedMedicine
+    });
   };
 
   // Remove chip/tag
   const removeSymptom = (id) => {
     const updated = selectedSymptoms.filter((s) => s.symptom_id !== id);
     setSelectedSymptoms(updated);
-    onSearch(updated.map((s) => s.name).join(","));
+    onSearch({
+      symptoms: updated.map((s) => s.name).join(","),
+      medicine_id: selectedMedicine
+    });
   };
 
   // Keyboard navigation and backspace to remove
@@ -169,11 +191,12 @@ const SearchBar = ({ onSearch }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      // If there's text in the input, try to add it as a symptom
       findClosestSymptom(inputValue);
     } else {
-      // Otherwise just submit the current selection
-      onSearch(selectedSymptoms.map((s) => s.name).join(","));
+      onSearch({
+        symptoms: selectedSymptoms.map((s) => s.name).join(","),
+        medicine_id: selectedMedicine
+      });
     }
   };
 
@@ -183,95 +206,112 @@ const SearchBar = ({ onSearch }) => {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
+  const handleMedicineChange = (medicineId) => {
+    setSelectedMedicine(medicineId);
+    onSearch({
+      symptoms: selectedSymptoms.map((s) => s.name).join(","),
+      medicine_id: medicineId
+    });
+  };
+
   return (
-    <form className="search-form" onSubmit={handleSubmit} autoComplete="off">
-      <div className="searchbar-chips-container" ref={containerRef}>
-        {selectedSymptoms.map((s) => (
-          <span className="chip" key={s.symptom_id}>
-            {s.name}
+    <div className="search-container">
+      <form className="search-form" onSubmit={handleSubmit} autoComplete="off">
+        <div className="searchbar-chips-container" ref={containerRef}>
+          {selectedSymptoms.map((s) => (
+            <span className="chip" key={s.symptom_id}>
+              {s.name}
+              <button
+                type="button"
+                className="chip-remove"
+                aria-label="Remove symptom"
+                onClick={() => removeSymptom(s.symptom_id)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            ref={inputRef}
+            className="searchbar-input"
+            type="text"
+            value={inputValue}
+            placeholder={
+              selectedSymptoms.length === 0 ? "Type a symptom or speak..." : ""
+            }
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => inputValue && setShowSuggestions(true)}
+            onKeyDown={handleKeyDown}
+            style={{ minWidth: 80, flex: 1 }}
+          />
+          {inputValue && (
             <button
               type="button"
-              className="chip-remove"
-              aria-label="Remove symptom"
-              onClick={() => removeSymptom(s.symptom_id)}
+              className="clear-button"
+              onClick={() => setInputValue("")}
+              aria-label="Clear input"
             >
               ×
             </button>
-          </span>
-        ))}
-        <input
-          ref={inputRef}
-          className="searchbar-input"
-          type="text"
-          value={inputValue}
-          placeholder={
-            selectedSymptoms.length === 0 ? "Type a symptom or speak..." : ""
-          }
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => inputValue && setShowSuggestions(true)}
-          onKeyDown={handleKeyDown}
-          style={{ minWidth: 80, flex: 1 }}
-        />
-        {inputValue && (
+          )}
           <button
             type="button"
-            className="clear-button"
-            onClick={() => setInputValue("")}
-            aria-label="Clear input"
+            className={`voice-button ${isListening ? 'listening' : ''}`}
+            onClick={toggleVoiceRecognition}
+            aria-label="Voice input"
           >
-            ×
+            {isListening ? (
+              <span className="pulse-animation">🎤</span>
+            ) : (
+              "🎤"
+            )}
           </button>
-        )}
-        <button
-          type="button"
-          className={`voice-button ${isListening ? 'listening' : ''}`}
-          onClick={toggleVoiceRecognition}
-          aria-label="Voice input"
-        >
-          {isListening ? (
-            <span className="pulse-animation">🎤</span>
-          ) : (
-            "🎤"
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="autocomplete-dropdown">
+              {suggestions.map((s, idx) => (
+                <li
+                  key={s.symptom_id}
+                  id={`autocomplete-opt-${idx}`}
+                  tabIndex={0}
+                  className="autocomplete-option"
+                  onClick={() => handleSuggestionClick(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSuggestionClick(s);
+                    if (e.key === "ArrowDown" && suggestions[idx + 1])
+                      document.getElementById(
+                        `autocomplete-opt-${idx + 1}`
+                      )?.focus();
+                    if (e.key === "ArrowUp" && suggestions[idx - 1])
+                      document.getElementById(
+                        `autocomplete-opt-${idx - 1}`
+                      )?.focus();
+                    if (e.key === "Escape") {
+                      setShowSuggestions(false);
+                      inputRef.current.focus();
+                    }
+                  }}
+                >
+                  {s.name}
+                </li>
+              ))}
+            </ul>
           )}
-        </button>
-        <button className="searchbar-searchbtn" type="submit">
-          Search
-        </button>
-        {showSuggestions && suggestions.length > 0 && (
-          <ul className="autocomplete-dropdown">
-            {suggestions.map((s, idx) => (
-              <li
-                key={s.symptom_id}
-                id={`autocomplete-opt-${idx}`}
-                tabIndex={0}
-                className="autocomplete-option"
-                onClick={() => handleSuggestionClick(s)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSuggestionClick(s);
-                  if (e.key === "ArrowDown" && suggestions[idx + 1])
-                    document.getElementById(
-                      `autocomplete-opt-${idx + 1}`
-                    )?.focus();
-                  if (e.key === "ArrowUp" && suggestions[idx - 1])
-                    document.getElementById(
-                      `autocomplete-opt-${idx - 1}`
-                    )?.focus();
-                  if (e.key === "Escape") {
-                    setShowSuggestions(false);
-                    inputRef.current.focus();
-                  }
-                }}
-              >
-                {s.name}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </form>
+        </div>
+        <div className="search-controls">
+          <button className="searchbar-searchbtn" type="submit">
+            Search
+          </button>
+          <FilterBar 
+            medicines={medicines}
+            selectedMedicine={selectedMedicine}
+            onChange={handleMedicineChange}
+          />
+        </div>
+      </form>
+    </div>
   );
 };
 
