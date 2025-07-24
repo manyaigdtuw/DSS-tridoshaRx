@@ -9,8 +9,43 @@ const SearchBar = ({ onSearch }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const inputRef = useRef();
   const containerRef = useRef();
+  const recognitionRef = useRef(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window) {
+      recognitionRef.current = new window.webkitSpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        findClosestSymptom(transcript);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    } else {
+      console.warn('Speech recognition not supported in this browser');
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   // Fetch suggestions matching input (excluding already selected)
   useEffect(() => {
@@ -52,6 +87,52 @@ const SearchBar = ({ onSearch }) => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Find closest matching symptom from the transcript
+  const findClosestSymptom = async (transcript) => {
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/api/symptoms`);
+      const lowerTranscript = transcript.toLowerCase();
+      
+      // Find exact match first
+      let exactMatch = data.find(s => 
+        s.name.toLowerCase() === lowerTranscript
+      );
+      
+      if (exactMatch) {
+        addSymptom(exactMatch);
+        return;
+      }
+      
+      // Find partial match
+      let partialMatch = data.find(s => 
+        s.name.toLowerCase().includes(lowerTranscript) ||
+        lowerTranscript.includes(s.name.toLowerCase())
+      );
+      
+      if (partialMatch) {
+        addSymptom(partialMatch);
+      } else {
+        // If no match found, just set the input value
+        setInputValue(transcript);
+      }
+    } catch (error) {
+      console.error("Error fetching symptoms:", error);
+      setInputValue(transcript);
+    }
+  };
+
+  const toggleVoiceRecognition = () => {
+    if (!recognitionRef.current) return;
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
   // Add chip/tag
   const addSymptom = (symptom) => {
     const updated = [...selectedSymptoms, symptom];
@@ -87,7 +168,13 @@ const SearchBar = ({ onSearch }) => {
   // Submit by Search button
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSearch(selectedSymptoms.map((s) => s.name).join(","));
+    if (inputValue.trim()) {
+      // If there's text in the input, try to add it as a symptom
+      findClosestSymptom(inputValue);
+    } else {
+      // Otherwise just submit the current selection
+      onSearch(selectedSymptoms.map((s) => s.name).join(","));
+    }
   };
 
   // Move focus to input after selection
@@ -118,7 +205,7 @@ const SearchBar = ({ onSearch }) => {
           type="text"
           value={inputValue}
           placeholder={
-            selectedSymptoms.length === 0 ? "Type a symptom…" : ""
+            selectedSymptoms.length === 0 ? "Type a symptom or speak..." : ""
           }
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -138,6 +225,18 @@ const SearchBar = ({ onSearch }) => {
             ×
           </button>
         )}
+        <button
+          type="button"
+          className={`voice-button ${isListening ? 'listening' : ''}`}
+          onClick={toggleVoiceRecognition}
+          aria-label="Voice input"
+        >
+          {isListening ? (
+            <span className="pulse-animation">🎤</span>
+          ) : (
+            "🎤"
+          )}
+        </button>
         <button className="searchbar-searchbtn" type="submit">
           Search
         </button>
