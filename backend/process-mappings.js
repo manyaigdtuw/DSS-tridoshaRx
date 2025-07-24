@@ -5,12 +5,9 @@ import pool from './database.js';
 
 function normalizeSymptomName(raw) {
   if (!raw) return '';
-  let norm = raw.trim().toLowerCase().replace(/\s+/g, ' ');
-  if (symptomSynonymMap[norm]) {
-    norm = symptomSynonymMap[norm];
-  }
-  return norm;
+  return raw.trim().toLowerCase().replace(/\s+/g, ' ');
 }
+
 
 function normalize(str) {
   if (!str) return '';
