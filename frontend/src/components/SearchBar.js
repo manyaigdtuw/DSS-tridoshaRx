@@ -11,26 +11,13 @@ const SearchBar = ({ onSearch }) => {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [medicines, setMedicines] = useState([]);
-  const [selectedMedicine, setSelectedMedicine] = useState("");
+  const [isSearchingSymptoms, setIsSearchingSymptoms] = useState(false);
   const inputRef = useRef();
   const containerRef = useRef();
   const recognitionRef = useRef(null);
+const [categoryFilters, setCategoryFilters] = useState({});
 
-  // Fetch medicines on mount
-  useEffect(() => {
-    const fetchMedicines = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/medicines`);
-        setMedicines(response.data);
-      } catch (error) {
-        console.error("Error fetching medicines:", error);
-      }
-    };
-    fetchMedicines();
-  }, []);
 
-  // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
       recognitionRef.current = new window.webkitSpeechRecognition();
@@ -57,13 +44,10 @@ const SearchBar = ({ onSearch }) => {
     }
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      recognitionRef.current?.stop();
     };
   }, []);
 
-  // Fetch suggestions matching input (excluding already selected)
   useEffect(() => {
     if (!inputValue.trim()) {
       setSuggestions([]);
@@ -89,13 +73,9 @@ const SearchBar = ({ onSearch }) => {
     return () => { ignore = true; };
   }, [inputValue, selectedSymptoms]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     function handleClick(e) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
         setShowSuggestions(false);
       }
     }
@@ -103,32 +83,28 @@ const SearchBar = ({ onSearch }) => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Find closest matching symptom from the transcript
   const findClosestSymptom = async (transcript) => {
     try {
       const { data } = await axios.get(`${API_BASE_URL}/api/symptoms`);
       const lowerTranscript = transcript.toLowerCase();
-      
-      // Find exact match first
-      let exactMatch = data.find(s => 
+
+      let exactMatch = data.find(s =>
         s.name.toLowerCase() === lowerTranscript
       );
-      
+
       if (exactMatch) {
         addSymptom(exactMatch);
         return;
       }
-      
-      // Find partial match
-      let partialMatch = data.find(s => 
+
+      let partialMatch = data.find(s =>
         s.name.toLowerCase().includes(lowerTranscript) ||
         lowerTranscript.includes(s.name.toLowerCase())
       );
-      
+
       if (partialMatch) {
         addSymptom(partialMatch);
       } else {
-        // If no match found, just set the input value
         setInputValue(transcript);
       }
     } catch (error) {
@@ -139,7 +115,7 @@ const SearchBar = ({ onSearch }) => {
 
   const toggleVoiceRecognition = () => {
     if (!recognitionRef.current) return;
-    
+
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -149,7 +125,6 @@ const SearchBar = ({ onSearch }) => {
     }
   };
 
-  // Add chip/tag
   const addSymptom = (symptom) => {
     const updated = [...selectedSymptoms, symptom];
     setSelectedSymptoms(updated);
@@ -159,27 +134,21 @@ const SearchBar = ({ onSearch }) => {
     setShowSuggestions(false);
     onSearch({
       symptoms: updated.map((s) => s.name).join(","),
-      medicine_id: selectedMedicine
+      ...categoryFilters
     });
   };
 
-  // Remove chip/tag
   const removeSymptom = (id) => {
     const updated = selectedSymptoms.filter((s) => s.symptom_id !== id);
     setSelectedSymptoms(updated);
     onSearch({
       symptoms: updated.map((s) => s.name).join(","),
-      medicine_id: selectedMedicine
+      ...categoryFilters
     });
   };
 
-  // Keyboard navigation and backspace to remove
   const handleKeyDown = (e) => {
-    if (
-      e.key === "Backspace" &&
-      !inputValue &&
-      selectedSymptoms.length
-    ) {
+    if (e.key === "Backspace" && !inputValue && selectedSymptoms.length) {
       removeSymptom(selectedSymptoms[selectedSymptoms.length - 1].symptom_id);
     }
     if (e.key === "ArrowDown" && suggestions.length) {
@@ -187,32 +156,51 @@ const SearchBar = ({ onSearch }) => {
     }
   };
 
-  // Submit by Search button
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (inputValue.trim()) {
       findClosestSymptom(inputValue);
     } else {
       onSearch({
         symptoms: selectedSymptoms.map((s) => s.name).join(","),
-        medicine_id: selectedMedicine
+        ...categoryFilters
       });
     }
   };
 
-  // Move focus to input after selection
+  const handleSearch = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/search-enhanced`, {
+      params: {
+        term: selectedSymptoms.map(s => s.name).join(','),
+        ...(categoryFilters.categorytype_id && { categorytype_ids: [categoryFilters.categorytype_id] }),
+        ...(categoryFilters.category_id && { category_ids: [categoryFilters.category_id] }),
+        ...(categoryFilters.subcategory_id && { subcategory_ids: [categoryFilters.subcategory_id] }),
+        ...(categoryFilters.tertiary_id && { tertiary_ids: [categoryFilters.tertiary_id] })
+      }
+    });
+    onSearch(response.data);
+  } catch (error) {
+    console.error("Error searching diseases:", error);
+  }
+};
+
   const handleSuggestionClick = (s) => {
     addSymptom(s);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const handleMedicineChange = (medicineId) => {
-    setSelectedMedicine(medicineId);
-    onSearch({
-      symptoms: selectedSymptoms.map((s) => s.name).join(","),
-      medicine_id: medicineId
-    });
-  };
+ const handleCategoryFilter = (filters) => {
+  // Remove keys with empty arrays for safety
+  const cleaned = {};
+  for (const key in filters) {
+    if (Array.isArray(filters[key]) && filters[key].length === 0) continue;
+    cleaned[key] = filters[key];
+  }
+  setCategoryFilters(cleaned);
+  onSearch({ symptoms: selectedSymptoms.map((s) => s.name).join(","), ...cleaned });
+};
+
 
   return (
     <div className="search-container">
@@ -281,13 +269,9 @@ const SearchBar = ({ onSearch }) => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSuggestionClick(s);
                     if (e.key === "ArrowDown" && suggestions[idx + 1])
-                      document.getElementById(
-                        `autocomplete-opt-${idx + 1}`
-                      )?.focus();
+                      document.getElementById(`autocomplete-opt-${idx + 1}`)?.focus();
                     if (e.key === "ArrowUp" && suggestions[idx - 1])
-                      document.getElementById(
-                        `autocomplete-opt-${idx - 1}`
-                      )?.focus();
+                      document.getElementById(`autocomplete-opt-${idx - 1}`)?.focus();
                     if (e.key === "Escape") {
                       setShowSuggestions(false);
                       inputRef.current.focus();
@@ -304,11 +288,7 @@ const SearchBar = ({ onSearch }) => {
           <button className="searchbar-searchbtn" type="submit">
             Search
           </button>
-          <FilterBar 
-            medicines={medicines}
-            selectedMedicine={selectedMedicine}
-            onChange={handleMedicineChange}
-          />
+          <FilterBar onCategoryFilter={handleCategoryFilter} />
         </div>
       </form>
     </div>

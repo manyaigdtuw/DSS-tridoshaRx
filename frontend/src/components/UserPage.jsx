@@ -18,19 +18,27 @@ const SymptomChecker = () => {
   const [selectedDisease, setSelectedDisease] = useState(null);
   const navigate = useNavigate();
 
-   const handleSearch = async ({ symptoms, medicine_id }) => {
+  const handleSearch = async ({ symptoms, ...filters }) => {
     setIsLoading(true);
     try {
-      const params = { term: symptoms };
-      if (medicine_id) params.medicine_id = medicine_id;
-      const response = await axios.get(`${API_BASE_URL}/api/search`, { params });
+      console.log("Searching with filters:", { symptoms, ...filters }); // Debug log
+      const response = await axios.get(`${API_BASE_URL}/api/search-enhanced`, {
+        params: {
+          term: symptoms,
+          ...filters
+        }
+      });
+      console.log("Search results:", response.data); // Debug log
       setSearchResults(response.data);
+      setDiseaseDetails(null); // Clear any existing disease details
     } catch (error) {
+      console.error("Search error:", error);
       setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
+
 
 
   // New function to handle disease selection

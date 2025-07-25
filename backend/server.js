@@ -732,13 +732,258 @@ app.get('/api/search', async (req, res) => {
 });
 */
 
-// In server.js
-app.get('/api/medicines', async (req, res) => {
+// Add these endpoints to your server.js
+
+// Get all category types with their hierarchy
+app.get('/api/category-hierarchy', async (req, res) => {
   try {
-    const result = await pool.query('SELECT medicine_id, name FROM Medicines');
+    // Get all category types
+    const categoryTypes = await pool.query('SELECT id, type_name FROM categorytype ORDER BY type_name');
+    
+    // For each category type, get its categories
+    const categoriesWithHierarchy = await Promise.all(
+      categoryTypes.rows.map(async (type) => {
+        const categories = await pool.query(
+          'SELECT id, category_name FROM category WHERE categorytype_id = $1 ORDER BY category_name',
+          [type.id]
+        );
+        
+        // For each category, get its subcategories
+        const categoriesWithSub = await Promise.all(
+          categories.rows.map(async (category) => {
+            const subcategories = await pool.query(
+              'SELECT id, subcategory_name FROM subcategory WHERE category_id = $1 ORDER BY subcategory_name',
+              [category.id]
+            );
+            
+            // For each subcategory, get its tertiary categories
+            const subcategoriesWithTertiary = await Promise.all(
+              subcategories.rows.map(async (subcategory) => {
+                const tertiaryCategories = await pool.query(
+                  'SELECT id, tertiary_name FROM tertiarycategory WHERE subcategory_id = $1 ORDER BY tertiary_name',
+                  [subcategory.id]
+                );
+                return {
+                  ...subcategory,
+                  tertiaryCategories: tertiaryCategories.rows
+                };
+              })
+            );
+            
+            return {
+              ...category,
+              subcategories: subcategoriesWithTertiary
+            };
+          })
+        );
+        
+        return {
+          ...type,
+          categories: categoriesWithSub
+        };
+      })
+    );
+    
+    res.json(categoriesWithHierarchy);
+  } catch (err) {
+    console.error('Error fetching category hierarchy:', err);
+    res.status(500).json({ error: "Failed to fetch category hierarchy" });
+  }
+});
+
+// Enhanced search endpoint with category filters
+app.get('/api/search-enhanced', async (req, res) => {
+  console.log("Incoming search request with params:", req.query);
+
+  const getQueryArray = (req, key) => {
+    const raw = req.query[key] || req.query[`${key}[]`];
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : raw.split(',').filter(Boolean);
+  };
+
+  try {
+    const terms = getQueryArray(req, 'term').map(t => t.toLowerCase().trim()).filter(Boolean);
+    if (terms.length === 0) {
+      return res.status(400).json({ error: "Search term is required" });
+    }
+
+    const catTypeArr = getQueryArray(req, 'categorytype_ids').map(Number);
+    const catArr     = getQueryArray(req, 'category_ids').map(Number);
+    const subArr     = getQueryArray(req, 'subcategory_ids').map(Number);
+    const tertArr    = getQueryArray(req, 'tertiary_ids').map(Number);
+
+    // Logging parsed input
+    console.log("Parsed category filters:", {
+      categorytype_ids: catTypeArr,
+      category_ids: catArr,
+      subcategory_ids: subArr,
+      tertiary_ids: tertArr
+    });
+
+    const searchPatterns = terms.map(t => `%${t}%`);
+    const symptomConditions = searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
+    const requiredMatchCount = terms.length;
+    const params = [...searchPatterns];
+
+    let categoryJoin = '';
+    const categoryClauses = [];
+
+    if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
+      categoryJoin = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
+
+      if (catTypeArr.length) {
+        params.push(catTypeArr);
+        categoryClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
+      }
+      if (catArr.length) {
+        params.push(catArr);
+        categoryClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
+      }
+      if (subArr.length) {
+        params.push(subArr);
+        categoryClauses.push(`dcm.subcategory_id = ANY($${params.length}::int[])`);
+      }
+      if (tertArr.length) {
+        params.push(tertArr);
+        categoryClauses.push(`dcm.tertiary_id = ANY($${params.length}::int[])`);
+      }
+    }
+
+    const categoryFilter = categoryClauses.length > 0 ? `AND ${categoryClauses.join(' AND ')}` : '';
+
+    const query = `
+      SELECT
+        d.disease_id,
+        d.name AS disease,
+        ARRAY(
+          SELECT s.name
+          FROM diseasesymptoms ds
+          JOIN symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ) AS symptoms
+      FROM diseases d
+      ${categoryJoin}
+      WHERE (
+        SELECT COUNT(DISTINCT s.name)
+        FROM diseasesymptoms ds
+        JOIN symptoms s ON ds.symptom_id = s.symptom_id
+        WHERE ds.disease_id = d.disease_id
+        AND (${symptomConditions})
+      ) = ${requiredMatchCount}
+      ${categoryFilter}
+      ORDER BY d.name
+    `;
+
+    // Final debug log
+    console.log("----------- FINAL QUERY LOG -----------");
+    console.log("Search term(s):", terms);
+    console.log("Symptom filter SQL:", symptomConditions);
+    console.log("Category filters:", categoryClauses);
+    console.log("Params:", params);
+    console.log("Final SQL Query:\n", query);
+    console.log("---------------------------------------");
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('Error in enhanced search:', {
+      error: err.message,
+      stack: err.stack,
+      query: req.query
+    });
+    res.status(500).json({ error: "Failed to perform search", details: err.message });
+  }
+});
+
+
+
+
+// Get all category types 
+app.get('/api/categorytypes', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, type_name FROM categorytype ORDER BY type_name');
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch medicines" });
+    res.status(500).json({ error: "Failed to fetch category types" });
+  }
+});
+
+// Get categories under a category type
+app.get('/api/categories', async (req, res) => {
+  const { categorytype_id } = req.query;
+  if (!categorytype_id) return res.status(400).json({ error: 'categorytype_id required' });
+  try {
+    const result = await pool.query(
+      'SELECT id, category_name FROM category WHERE categorytype_id = $1 ORDER BY category_name',
+      [categorytype_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
+});
+
+// Get subcategories under a category
+app.get('/api/subcategories', async (req, res) => {
+  const { category_id } = req.query;
+  if (!category_id) return res.status(400).json({ error: 'category_id required' });
+  try {
+    const result = await pool.query(
+      'SELECT id, subcategory_name FROM subcategory WHERE category_id = $1 ORDER BY subcategory_name',
+      [category_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch subcategories" });
+  }
+});
+
+// Get tertiary categories under a subcategory (optional)
+app.get('/api/tertiarycategories', async (req, res) => {
+  const { subcategory_id } = req.query;
+  if (!subcategory_id) return res.status(400).json({ error: 'subcategory_id required' });
+  try {
+    const result = await pool.query(
+      'SELECT id, tertiary_name FROM tertiarycategory WHERE subcategory_id = $1 ORDER BY tertiary_name',
+      [subcategory_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch tertiary categories" });
+  }
+});
+
+// Get diseases by selected path
+app.get('/api/diseases/by-category', async (req, res) => {
+  const { categorytype_id, category_id, subcategory_id, tertiary_id } = req.query;
+  let query = `
+    SELECT 
+      d.disease_id, 
+      d.name,
+      ARRAY(
+        SELECT s.name 
+        FROM DiseaseSymptoms ds 
+        JOIN Symptoms s ON ds.symptom_id = s.symptom_id 
+        WHERE ds.disease_id = d.disease_id
+      ) AS symptoms
+    FROM diseases d
+  `;
+  const params = [categorytype_id, category_id];
+  if (subcategory_id) {
+    query += ' AND m.subcategory_id = $3';
+    params.push(subcategory_id);
+    if (tertiary_id) {
+      query += ' AND m.tertiary_id = $4';
+      params.push(tertiary_id);
+    }
+  }
+  query += ' ORDER BY d.name';
+  try {
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch diseases for selected category" });
   }
 });
 
