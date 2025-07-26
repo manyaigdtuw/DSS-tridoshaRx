@@ -170,7 +170,7 @@ const [categoryFilters, setCategoryFilters] = useState({});
 
   const handleSearch = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/search-enhanced`, {
+    const response = await axios.get(`${API_BASE_URL}/api/search-partial`, {
       params: {
         term: selectedSymptoms.map(s => s.name).join(','),
         ...(categoryFilters.categorytype_id && { categorytype_ids: [categoryFilters.categorytype_id] }),
@@ -285,9 +285,14 @@ const [categoryFilters, setCategoryFilters] = useState({});
           )}
         </div>
         <div className="search-controls">
-          <button className="searchbar-searchbtn" type="submit">
-            Search
-          </button>
+          <button
+  className="searchbar-searchbtn"
+  type="button"
+  onClick={handleSearch}
+>
+  Search for any symptom
+</button>
+
           <FilterBar onCategoryFilter={handleCategoryFilter} />
         </div>
       </form>

@@ -1,178 +1,178 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+// modern multi-select with search!
+import { MultiSelect } from "react-multi-select-component";
 import './SearchBar.css';
 
 const API_BASE_URL = "http://localhost:5000";
 
+// Helper for select options
+const mapOptions = (list, labelKey = "name", valueKey = "id") =>
+  list.map(item => ({
+    label: item[labelKey],
+    value: item[valueKey],
+    raw: item,
+  }));
+
 export default function FilterBar({ onCategoryFilter }) {
+  // Raw data
   const [categoryTypes, setCategoryTypes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [tertiaryCategories, setTertiaryCategories] = useState([]);
-  
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [selectedTertiary, setSelectedTertiary] = useState("");
 
-  
+  // For selections (arrays for multi-select)
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState([]);
+  const [selectedTertiaries, setSelectedTertiaries] = useState([]);
+
+  // Fetch category TYPES (top level)
   useEffect(() => {
-    const fetchCategoryTypes = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/categorytypes`);
-        setCategoryTypes(response.data);
-      } catch (error) {
-        console.error("Error fetching category types:", error);
-      }
-    };
-    fetchCategoryTypes();
+    axios.get(`${API_BASE_URL}/api/categorytypes`)
+      .then(res => setCategoryTypes(res.data))
+      .catch(console.error);
   }, []);
 
-  
+  // Fetch CATEGORIES whenever types change
   useEffect(() => {
-    if (!selectedType) {
+    if (!selectedTypes.length) {
       setCategories([]);
-      setSelectedCategory("");
+      setSelectedCategories([]);
       return;
     }
-    
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/categories`, {
-          params: { categorytype_id: selectedType }
-        });
-        setCategories(response.data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    fetchCategories();
-  }, [selectedType]);
+    const promises = selectedTypes.map(type =>
+      axios.get(`${API_BASE_URL}/api/categories`, { params: { categorytype_id: type.value } })
+    );
+    Promise.all(promises)
+      .then(results => {
+        // flatten arrays of categories and dedupe by id
+        const allCats = [].concat(...results.map(r => r.data));
+        const deduped = Object.values(allCats.reduce((acc, cur) => {
+          acc[cur.id] = cur; return acc;
+        }, {}));
+        setCategories(deduped);
+        // Remove previously selected if not present in new list
+        setSelectedCategories(scats => scats.filter(sel =>
+          deduped.some(c => c.id === sel.value)
+        ));
+      }).catch(console.error);
+  }, [selectedTypes]);
 
-  
+  // SUBCATEGORIES fetch—on categories change
   useEffect(() => {
-    if (!selectedCategory) {
+    if (!selectedCategories.length) {
       setSubcategories([]);
-      setSelectedSubcategory("");
+      setSelectedSubcategories([]);
       return;
     }
-    
-    const fetchSubcategories = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/subcategories`, {
-          params: { category_id: selectedCategory }
-        });
-        setSubcategories(response.data);
-      } catch (error) {
-        console.error("Error fetching subcategories:", error);
-      }
-    };
-    fetchSubcategories();
-  }, [selectedCategory]);
+    const promises = selectedCategories.map(cat =>
+      axios.get(`${API_BASE_URL}/api/subcategories`, { params: { category_id: cat.value } })
+    );
+    Promise.all(promises)
+      .then(results => {
+        const allSubs = [].concat(...results.map(r => r.data));
+        const deduped = Object.values(allSubs.reduce((acc, cur) => { acc[cur.id] = cur; return acc; }, {}));
+        setSubcategories(deduped);
+        setSelectedSubcategories(ssubs => ssubs.filter(sel =>
+          deduped.some(s => s.id === sel.value)
+        ));
+      }).catch(console.error);
+  }, [selectedCategories]);
 
-  
+  // TERTIARIES fetch—on subcategories change
   useEffect(() => {
-    if (!selectedSubcategory) {
+    if (!selectedSubcategories.length) {
       setTertiaryCategories([]);
-      setSelectedTertiary("");
+      setSelectedTertiaries([]);
       return;
     }
-    
-    const fetchTertiaryCategories = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/tertiarycategories`, {
-          params: { subcategory_id: selectedSubcategory }
-        });
-        setTertiaryCategories(response.data);
-      } catch (error) {
-        console.error("Error fetching tertiary categories:", error);
-      }
-    };
-    fetchTertiaryCategories();
-  }, [selectedSubcategory]);
+    const promises = selectedSubcategories.map(sub =>
+      axios.get(`${API_BASE_URL}/api/tertiarycategories`, { params: { subcategory_id: sub.value } })
+    );
+    Promise.all(promises)
+      .then(results => {
+        const allTer = [].concat(...results.map(r => r.data));
+        const deduped = Object.values(allTer.reduce((acc, cur) => { acc[cur.id] = cur; return acc; }, {}));
+        setTertiaryCategories(deduped);
+        setSelectedTertiaries(ster => ster.filter(sel =>
+          deduped.some(t => t.id === sel.value)
+        ));
+      }).catch(console.error);
+  }, [selectedSubcategories]);
 
-  
+  // Whenever any selection changes, push filters up
   useEffect(() => {
-    const filters = {};
-if (selectedType) filters.categorytype_ids = [selectedType];
-if (selectedCategory) filters.category_ids = [selectedCategory];
-if (selectedSubcategory) filters.subcategory_ids = [selectedSubcategory];
-if (selectedTertiary) filters.tertiary_ids = [selectedTertiary];
+    onCategoryFilter({
+      categorytype_ids: selectedTypes.map(o => o.value),
+      category_ids: selectedCategories.map(o => o.value),
+      subcategory_ids: selectedSubcategories.map(o => o.value),
+      tertiary_ids: selectedTertiaries.map(o => o.value),
+    });
+    // eslint-disable-next-line
+  }, [selectedTypes, selectedCategories, selectedSubcategories, selectedTertiaries]);
 
-onCategoryFilter(filters);
-  }, [selectedType, selectedCategory, selectedSubcategory, selectedTertiary]);
+  // Style controls for the MultiSelect (nicer, but simple for now)
+  const multiSelectStyle = { minWidth: 160, maxWidth: 320, margin: "6px 0" };
 
   return (
     <div className="filter-bar">
-      {/* Category Type Dropdown */}
-      <div className="filter-section">
-        <label>Type:</label>
-        <select 
-          value={selectedType} 
-          onChange={(e) => setSelectedType(e.target.value)}
-        >
-          <option value="">All Types</option>
-          {categoryTypes.map(type => (
-            <option key={type.id} value={type.id}>
-              {type.type_name}
-            </option>
-          ))}
-        </select>
+      {/* Category Type Multi-select */}
+      <div className="filter-section" style={{ minWidth: 170 }}>
+        <label>Category Type:</label>
+        <MultiSelect
+          options={mapOptions(categoryTypes, "type_name", "id")}
+          value={selectedTypes}
+          onChange={setSelectedTypes}
+          labelledBy="Select Type"
+          hasSelectAll={true}
+          overrideStrings={{ selectSomeItems: "Select Type(s)..." }}
+          isLoading={categoryTypes.length === 0}
+          style={multiSelectStyle}
+        />
       </div>
-
-      {/* Category Dropdown (only shown if type is selected) */}
-      {selectedType && (
-        <div className="filter-section">
-          <label>Category:</label>
-          <select 
-            value={selectedCategory} 
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.category_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Subcategory Dropdown (only shown if category is selected) */}
-      {selectedCategory && (
-        <div className="filter-section">
-          <label>Subcategory:</label>
-          <select 
-            value={selectedSubcategory} 
-            onChange={(e) => setSelectedSubcategory(e.target.value)}
-          >
-            <option value="">All Subcategories</option>
-            {subcategories.map(subcategory => (
-              <option key={subcategory.id} value={subcategory.id}>
-                {subcategory.subcategory_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Tertiary Dropdown (only shown if subcategory is selected) */}
-      {selectedSubcategory && (
-        <div className="filter-section">
-          <label>Tertiary:</label>
-          <select 
-            value={selectedTertiary} 
-            onChange={(e) => setSelectedTertiary(e.target.value)}
-          >
-            <option value="">All Tertiary</option>
-            {tertiaryCategories.map(tertiary => (
-              <option key={tertiary.id} value={tertiary.id}>
-                {tertiary.tertiary_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Category Multi-select */}
+      <div className="filter-section" style={{ minWidth: 170 }}>
+        <label>Category:</label>
+        <MultiSelect
+          options={mapOptions(categories, "category_name", "id")}
+          value={selectedCategories}
+          onChange={setSelectedCategories}
+          labelledBy="Select Category"
+          hasSelectAll={true}
+          overrideStrings={{ selectSomeItems: "Select Category(s)..." }}
+          isLoading={selectedTypes.length > 0 && categories.length === 0}
+          style={multiSelectStyle}
+        />
+      </div>
+      {/* Subcategory Multi-select */}
+      <div className="filter-section" style={{ minWidth: 170 }}>
+        <label>Subcategory:</label>
+        <MultiSelect
+          options={mapOptions(subcategories, "subcategory_name", "id")}
+          value={selectedSubcategories}
+          onChange={setSelectedSubcategories}
+          labelledBy="Select Subcategory"
+          hasSelectAll={true}
+          overrideStrings={{ selectSomeItems: "Select Subcategory(s)..." }}
+          isLoading={selectedCategories.length > 0 && subcategories.length === 0}
+          style={multiSelectStyle}
+        />
+      </div>
+      {/* Tertiary Multi-select */}
+      <div className="filter-section" style={{ minWidth: 170 }}>
+        <label>Tertiary:</label>
+        <MultiSelect
+          options={mapOptions(tertiaryCategories, "tertiary_name", "id")}
+          value={selectedTertiaries}
+          onChange={setSelectedTertiaries}
+          labelledBy="Select Tertiary"
+          hasSelectAll={true}
+          overrideStrings={{ selectSomeItems: "Select Tertiary(s)..." }}
+          isLoading={selectedSubcategories.length > 0 && tertiaryCategories.length === 0}
+          style={multiSelectStyle}
+        />
+      </div>
     </div>
   );
 }

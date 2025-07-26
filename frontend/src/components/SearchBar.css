@@ -368,3 +368,19 @@
     width: 100%;
   }
 }
+
+.filter-bar {
+  flex-wrap: wrap;
+}
+.filter-section {
+  margin-right: 18px;
+  min-width: 172px;
+}
+/* Tweak the multiselect library display if needed */
+.rmsc {
+  --rmsc-main: #2266b6;
+  --rmsc-border: #b7d8f7;
+  --rmsc-hover: #eef6fb;
+  --rmsc-selected: #e3f0fa;
+  font-size: 1em;
+}

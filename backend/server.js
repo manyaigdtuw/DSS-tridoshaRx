@@ -504,235 +504,7 @@ app.get('/api/export-mappings', async (req, res) => {
   }
 });
 
-/* search api v1 or based
-app.get('/api/search', async (req, res) => {
-  const { term } = req.query;
 
-  if (!term || term.trim() === "") {
-    return res.status(400).json({ error: "Search term is required" });
-  }
-
-  try {
-    
-    const terms = Array.isArray(term) ? term : term.split(',').map(t => t.trim()).filter(t => t);
-    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
-
-   
-    const symptomConditions = searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
-
-    const query = `
-      SELECT 
-        d.name AS disease,
-        d.disease_id,
-        ARRAY(
-          SELECT s.name
-          FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-        ) AS symptoms,
-        ARRAY(
-          SELECT m.name
-          FROM DiseaseMedicines dm
-          JOIN Medicines m ON dm.medicine_id = m.medicine_id
-          WHERE dm.disease_id = d.disease_id
-        ) AS medicines,
-        ARRAY(
-          SELECT l.name
-          FROM DiseaseLabDiagnoses dld
-          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
-          WHERE dld.disease_id = d.disease_id
-        ) AS lab_tests,
-        ARRAY(
-          SELECT p.name
-          FROM DiseaseProcedures dp
-          JOIN Procedures p ON dp.procedure_id = p.procedure_id
-          WHERE dp.disease_id = d.disease_id
-        ) AS procedures,
-        ARRAY(
-          SELECT lr.name
-          FROM disease_lifestyle dl
-          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
-          WHERE dl.disease_id = d.disease_id
-        ) AS lifestyle_recommendations,
-        (
-          SELECT COUNT(*) 
-          FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-          AND (${symptomConditions})
-        ) AS matched_symptoms_count
-      FROM Diseases d
-      WHERE EXISTS (
-        SELECT 1
-        FROM DiseaseSymptoms ds
-        JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-        WHERE ds.disease_id = d.disease_id
-        AND (${symptomConditions})
-      )
-      ORDER BY matched_symptoms_count DESC, d.name
-    `;
-
-    console.log("Executing With parameters:", searchPatterns);
-
-    const result = await pool.query(query, searchPatterns);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error performing symptom-based search:', err);
-    res.status(500).json({ error: "Failed to perform search" });
-  }
-});
-*/
-
-// current version
-// In server.js (syndicated for symptom search)
-app.get('/api/search', async (req, res) => {
-  const { term, medicine_id } = req.query;
-  if (!term || term.trim() === "") {
-    return res.status(400).json({ error: "Search term is required" });
-  }
-
-  try {
-    const terms = Array.isArray(term)
-      ? term
-      : term.split(',').map(t => t.trim()).filter(t => t);
-    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
-    const symptomConditions =
-      searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
-    const requiredMatchCount = terms.length;
-
-    let filterQuery = "";
-    let filterParams = [];
-    if (medicine_id) {
-      filterQuery = `
-        AND EXISTS (
-          SELECT 1 FROM DiseaseMedicines dm
-          WHERE dm.disease_id = d.disease_id
-          AND dm.medicine_id = $${searchPatterns.length + 1}
-        )
-      `;
-      filterParams.push(medicine_id);
-    }
-
-    const query = `
-      SELECT
-        d.name AS disease,
-        d.disease_id,
-        ARRAY(
-          SELECT s.name
-          FROM DiseaseSymptoms ds
-            JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-        ) AS symptoms,
-        ARRAY(
-          SELECT m.name
-          FROM DiseaseMedicines dm
-            JOIN Medicines m ON dm.medicine_id = m.medicine_id
-          WHERE dm.disease_id = d.disease_id
-        ) AS medicines
-      FROM Diseases d
-      WHERE (
-        SELECT COUNT(DISTINCT s.name)
-        FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-        WHERE ds.disease_id = d.disease_id
-        AND (${symptomConditions})
-      ) = ${requiredMatchCount}
-      ${filterQuery}
-      ORDER BY d.name
-    `;
-    const params = [...searchPatterns, ...filterParams];
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to perform search" });
-  }
-});
-
-
-/* version 3 search api 
-app.get('/api/search', async (req, res) => {
-  try {
-    const { term } = req.query;
-
-    if (!term || term.trim() === "") {
-      return res.status(400).json({ error: "Search term is required" });
-    }
-
-    
-    const terms = Array.isArray(term)
-      ? term
-      : term.split(',').map((t) => t.trim()).filter((t) => t);
-
-    if (terms.length === 0) {
-      return res.status(400).json({ error: "No valid symptoms provided" });
-    }
-
-    
-    const searchPatterns = terms.map(t => `%${t.toLowerCase()}%`);
-
-    
-    const existsClauses = searchPatterns
-      .map((_, i) => `
-        EXISTS (
-          SELECT 1 FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-          AND LOWER(s.name) LIKE $${i + 1}
-        )
-      `)
-      .join(' AND ');
-
-    
-    const query = `
-      SELECT 
-        d.name AS disease,
-        d.disease_id,
-        ARRAY(
-          SELECT s.name
-          FROM DiseaseSymptoms ds
-          JOIN Symptoms s ON ds.symptom_id = s.symptom_id
-          WHERE ds.disease_id = d.disease_id
-        ) AS symptoms,
-        ARRAY(
-          SELECT m.name
-          FROM DiseaseMedicines dm
-          JOIN Medicines m ON dm.medicine_id = m.medicine_id
-          WHERE dm.disease_id = d.disease_id
-        ) AS medicines,
-        ARRAY(
-          SELECT l.name
-          FROM DiseaseLabDiagnoses dld
-          JOIN LabDiagnoses l ON dld.lab_id = l.lab_id
-          WHERE dld.disease_id = d.disease_id
-        ) AS lab_tests,
-        ARRAY(
-          SELECT p.name
-          FROM DiseaseProcedures dp
-          JOIN Procedures p ON dp.procedure_id = p.procedure_id
-          WHERE dp.disease_id = d.disease_id
-        ) AS procedures,
-        ARRAY(
-          SELECT lr.name
-          FROM disease_lifestyle dl
-          JOIN lifestyle_recommendations lr ON dl.lifestyle_id = lr.lifestyle_id
-          WHERE dl.disease_id = d.disease_id
-        ) AS lifestyle_recommendations
-      FROM Diseases d
-      WHERE ${existsClauses}
-      ORDER BY d.name
-    `;
-
-    const dbResult = await pool.query(query, searchPatterns);
-    res.json(dbResult.rows);
-
-  } catch (err) {
-    console.error('Error performing symptom-based disease search:', err);
-    res.status(500).json({ error: "Failed to perform search" });
-  }
-});
-*/
-
-// Add these endpoints to your server.js
 
 // Get all category types with their hierarchy
 app.get('/api/category-hierarchy', async (req, res) => {
@@ -791,7 +563,7 @@ app.get('/api/category-hierarchy', async (req, res) => {
   }
 });
 
-// Enhanced search endpoint with category filters
+// Enhanced search endpoint with category filters & AND Condition
 app.get('/api/search-enhanced', async (req, res) => {
   console.log("Incoming search request with params:", req.query);
 
@@ -896,8 +668,107 @@ app.get('/api/search-enhanced', async (req, res) => {
   }
 });
 
-
-
+// Partial match search endpoint (matches if at least one symptom is present)
+app.get('/api/search-partial', async (req, res) => {
+  console.log("Incoming partial search request with params:", req.query);
+  
+  const getQueryArray = (req, key) => {
+    const raw = req.query[key] || req.query[`${key}[]`];
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : raw.split(',').filter(Boolean);
+  };
+  
+  try {
+    const terms = getQueryArray(req, 'term').map(t => t.toLowerCase().trim()).filter(Boolean);
+    if (terms.length === 0) {
+      return res.status(400).json({ error: "Search term is required" });
+    }
+    
+    const catTypeArr = getQueryArray(req, 'categorytype_ids').map(Number);
+    const catArr = getQueryArray(req, 'category_ids').map(Number);
+    const subArr = getQueryArray(req, 'subcategory_ids').map(Number);
+    const tertArr = getQueryArray(req, 'tertiary_ids').map(Number);
+    
+    // Logging parsed input
+    console.log("Parsed category filters:", {
+      categorytype_ids: catTypeArr,
+      category_ids: catArr,
+      subcategory_ids: subArr,
+      tertiary_ids: tertArr
+    });
+    
+    const searchPatterns = terms.map(t => `%${t}%`);
+    const symptomConditions = searchPatterns.map((_, i) => `LOWER(s.name) LIKE $${i + 1}`).join(' OR ');
+    
+    const params = [...searchPatterns];
+    let categoryJoin = '';
+    const categoryClauses = [];
+    
+    if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
+      categoryJoin = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
+      if (catTypeArr.length) {
+        params.push(catTypeArr);
+        categoryClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
+      }
+      if (catArr.length) {
+        params.push(catArr);
+        categoryClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
+      }
+      if (subArr.length) {
+        params.push(subArr);
+        categoryClauses.push(`dcm.subcategory_id = ANY($${params.length}::int[])`);
+      }
+      if (tertArr.length) {
+        params.push(tertArr);
+        categoryClauses.push(`dcm.tertiary_id = ANY($${params.length}::int[])`);
+      }
+    }
+    
+    const categoryFilter = categoryClauses.length > 0 ? `AND ${categoryClauses.join(' AND ')}` : '';
+    
+    const query = `
+      SELECT
+        d.disease_id,
+        d.name AS disease,
+        ARRAY(
+          SELECT s.name
+          FROM diseasesymptoms ds
+          JOIN symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ) AS symptoms
+      FROM diseases d
+      ${categoryJoin}
+      WHERE (
+        SELECT COUNT(DISTINCT s.name)
+        FROM diseasesymptoms ds
+        JOIN symptoms s ON ds.symptom_id = s.symptom_id
+        WHERE ds.disease_id = d.disease_id
+        AND (${symptomConditions})
+      ) >= 1
+      ${categoryFilter}
+      ORDER BY d.name
+    `;
+    
+    // Final debug log
+    console.log("----------- FINAL PARTIAL QUERY LOG -----------");
+    console.log("Search term(s):", terms);
+    console.log("Symptom filter SQL:", symptomConditions);
+    console.log("Category filters:", categoryClauses);
+    console.log("Params:", params);
+    console.log("Final SQL Query:\n", query);
+    console.log("---------------------------------------");
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error in partial search:', {
+      error: err.message,
+      stack: err.stack,
+      query: req.query
+    });
+    res.status(500).json({ error: "Failed to perform partial search", details: err.message });
+  }
+});
 
 // Get all category types 
 app.get('/api/categorytypes', async (req, res) => {
@@ -926,12 +797,17 @@ app.get('/api/categories', async (req, res) => {
 
 // Get subcategories under a category
 app.get('/api/subcategories', async (req, res) => {
-  const { category_id } = req.query;
+  let { category_id } = req.query;  // Accept as string (e.g., "1,2,3") or array
   if (!category_id) return res.status(400).json({ error: 'category_id required' });
+
+  // Handle as array
+  if (!Array.isArray(category_id)) category_id = category_id.split(',').map(id => parseInt(id.trim())).filter(Boolean);
+  if (category_id.length === 0) return res.status(400).json({ error: 'Invalid category_ids' });
+
   try {
     const result = await pool.query(
-      'SELECT id, subcategory_name FROM subcategory WHERE category_id = $1 ORDER BY subcategory_name',
-      [category_id]
+      'SELECT id, subcategory_name FROM subcategory WHERE category_id = ANY($1::int[]) ORDER BY subcategory_name',
+      [category_id]  // Pass array directly to PostgreSQL's ANY()
     );
     res.json(result.rows);
   } catch (err) {
@@ -939,14 +815,20 @@ app.get('/api/subcategories', async (req, res) => {
   }
 });
 
+
 // Get tertiary categories under a subcategory (optional)
 app.get('/api/tertiarycategories', async (req, res) => {
-  const { subcategory_id } = req.query;
+  let { subcategory_id } = req.query;  // Accept as string (e.g., "1,2,3") or array
   if (!subcategory_id) return res.status(400).json({ error: 'subcategory_id required' });
+
+  // Handle as array
+  if (!Array.isArray(subcategory_id)) subcategory_id = subcategory_id.split(',').map(id => parseInt(id.trim())).filter(Boolean);
+  if (subcategory_id.length === 0) return res.status(400).json({ error: 'Invalid subcategory_ids' });
+
   try {
     const result = await pool.query(
-      'SELECT id, tertiary_name FROM tertiarycategory WHERE subcategory_id = $1 ORDER BY tertiary_name',
-      [subcategory_id]
+      'SELECT id, tertiary_name FROM tertiarycategory WHERE subcategory_id = ANY($1::int[]) ORDER BY tertiary_name',
+      [subcategory_id]  // Pass array directly to ANY()
     );
     res.json(result.rows);
   } catch (err) {
@@ -954,38 +836,27 @@ app.get('/api/tertiarycategories', async (req, res) => {
   }
 });
 
+
 // Get diseases by selected path
-app.get('/api/diseases/by-category', async (req, res) => {
-  const { categorytype_id, category_id, subcategory_id, tertiary_id } = req.query;
-  let query = `
-    SELECT 
-      d.disease_id, 
-      d.name,
-      ARRAY(
-        SELECT s.name 
-        FROM DiseaseSymptoms ds 
-        JOIN Symptoms s ON ds.symptom_id = s.symptom_id 
-        WHERE ds.disease_id = d.disease_id
-      ) AS symptoms
-    FROM diseases d
-  `;
-  const params = [categorytype_id, category_id];
-  if (subcategory_id) {
-    query += ' AND m.subcategory_id = $3';
-    params.push(subcategory_id);
-    if (tertiary_id) {
-      query += ' AND m.tertiary_id = $4';
-      params.push(tertiary_id);
-    }
-  }
-  query += ' ORDER BY d.name';
+app.get('/api/categories', async (req, res) => {
+  let { categorytype_id } = req.query;  // Accept as string (e.g., "1,2,3") or array
+  if (!categorytype_id) return res.status(400).json({ error: 'categorytype_id required' });
+
+  // Handle as array
+  if (!Array.isArray(categorytype_id)) categorytype_id = categorytype_id.split(',').map(id => parseInt(id.trim())).filter(Boolean);
+  if (categorytype_id.length === 0) return res.status(400).json({ error: 'Invalid categorytype_ids' });
+
   try {
-    const result = await pool.query(query, params);
+    const result = await pool.query(
+      'SELECT id, category_name FROM category WHERE categorytype_id = ANY($1::int[]) ORDER BY category_name',
+      [categorytype_id]  // Pass array directly to ANY()
+    );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch diseases for selected category" });
+    res.status(500).json({ error: "Failed to fetch categories" });
   }
 });
+
 
 
 const checkDuplicate = async (table, name) => {
