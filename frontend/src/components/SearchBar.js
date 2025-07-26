@@ -154,6 +154,7 @@ const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
     }
   };
 
+  // ✅ UPDATED: handleSearch with enteredSymptoms included
   const handleSearch = async () => {
     if (!selectedSymptoms.length) {
       alert("Please select at least one symptom.");
@@ -166,10 +167,13 @@ const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
           ...categoryFilters
         }
       });
-      onUpdateResults(response.data);
+      onUpdateResults({
+        results: response.data,
+        enteredSymptoms: selectedSymptoms.map(s => s.name)
+      });
     } catch (error) {
       console.error("Partial search error:", error);
-      onUpdateResults([]);
+      onUpdateResults({ results: [], enteredSymptoms: [] });
     }
   };
 

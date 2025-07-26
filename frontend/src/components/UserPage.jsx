@@ -16,9 +16,12 @@ const SymptomChecker = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedDisease, setSelectedDisease] = useState(null);
+  const [searchType, setSearchType] = useState(null); // NEW: search type tracking
+  const [enteredSymptoms, setEnteredSymptoms] = useState([]); // NEW: symptom tracking
+
   const navigate = useNavigate();
 
-  // ✳️ Enhanced search handler (from updated UserPage)
+  // ✳️ Enhanced search handler (from updated SearchBar)
   const handleEnhancedSearch = async ({ symptoms, ...filters }) => {
     setIsLoading(true);
     try {
@@ -32,6 +35,8 @@ const SymptomChecker = () => {
       console.log("Enhanced search results:", response.data);
       setSearchResults(response.data);
       setDiseaseDetails(null);
+      setSearchType('enhanced'); // NEW
+      setEnteredSymptoms(symptoms ? symptoms.split(',').map(s => s.trim()) : []); // NEW
     } catch (error) {
       console.error("Enhanced search error:", error);
       setSearchResults([]);
@@ -40,10 +45,12 @@ const SymptomChecker = () => {
     }
   };
 
-  // ✅ Optional: manual update method (can be passed to SearchBar if needed)
-  const updateResults = (results) => {
+  // ✅ Manual update method for partial search
+  const updateResults = ({ results, enteredSymptoms: passedSymptoms }) => {
     setSearchResults(results);
     setDiseaseDetails(null);
+    setSearchType('partial'); // NEW
+    setEnteredSymptoms(passedSymptoms || []); // NEW
   };
 
   // Disease selection logic
@@ -97,8 +104,9 @@ const SymptomChecker = () => {
           <h2>Search Symptoms</h2>
           <SearchBar 
             onEnhancedSearch={handleEnhancedSearch} 
-            onUpdateResults={updateResults} // Optional fallback
+            onUpdateResults={updateResults}
           />
+
           {isLoading && <div className="search-loading">Searching database...</div>}
         </div>
 
@@ -155,7 +163,11 @@ const SymptomChecker = () => {
               />
             </div>
           ) : (
-            <ResultsDisplay results={searchResults} />
+            <ResultsDisplay 
+              results={searchResults} 
+              searchType={searchType} 
+              enteredSymptoms={enteredSymptoms} 
+            />
           )}
         </div>
 

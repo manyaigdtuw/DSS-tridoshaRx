@@ -177,3 +177,11 @@
   content: "🌿";
   margin-right: 8px;
 }
+.match-info {
+  font-style: italic;
+  background: #f0f4ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
