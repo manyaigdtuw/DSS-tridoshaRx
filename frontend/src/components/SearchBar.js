@@ -5,18 +5,16 @@ import FilterBar from "./FilterBar";
 
 const API_BASE_URL = "http://localhost:5000";
 
-const SearchBar = ({ onSearch }) => {
+const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isSearchingSymptoms, setIsSearchingSymptoms] = useState(false);
   const inputRef = useRef();
   const containerRef = useRef();
   const recognitionRef = useRef(null);
-const [categoryFilters, setCategoryFilters] = useState({});
-
+  const [categoryFilters, setCategoryFilters] = useState({});
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -132,18 +130,18 @@ const [categoryFilters, setCategoryFilters] = useState({});
     setSuggestions([]);
     inputRef.current.focus();
     setShowSuggestions(false);
-    onSearch({
+    onEnhancedSearch({
       symptoms: updated.map((s) => s.name).join(","),
-      ...categoryFilters
+      ...categoryFilters,
     });
   };
 
   const removeSymptom = (id) => {
     const updated = selectedSymptoms.filter((s) => s.symptom_id !== id);
     setSelectedSymptoms(updated);
-    onSearch({
+    onEnhancedSearch({
       symptoms: updated.map((s) => s.name).join(","),
-      ...categoryFilters
+      ...categoryFilters,
     });
   };
 
@@ -156,51 +154,51 @@ const [categoryFilters, setCategoryFilters] = useState({});
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSearch = async () => {
+    if (!selectedSymptoms.length) {
+      alert("Please select at least one symptom.");
+      return;
+    }
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/search-partial`, {
+        params: {
+          term: selectedSymptoms.map(s => s.name).join(','),
+          ...categoryFilters
+        }
+      });
+      onUpdateResults(response.data);
+    } catch (error) {
+      console.error("Partial search error:", error);
+      onUpdateResults([]);
+    }
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim()) {
       findClosestSymptom(inputValue);
     } else {
-      onSearch({
-        symptoms: selectedSymptoms.map((s) => s.name).join(","),
-        ...categoryFilters
-      });
+      handleSearch();
     }
   };
-
-  const handleSearch = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/api/search-partial`, {
-      params: {
-        term: selectedSymptoms.map(s => s.name).join(','),
-        ...(categoryFilters.categorytype_id && { categorytype_ids: [categoryFilters.categorytype_id] }),
-        ...(categoryFilters.category_id && { category_ids: [categoryFilters.category_id] }),
-        ...(categoryFilters.subcategory_id && { subcategory_ids: [categoryFilters.subcategory_id] }),
-        ...(categoryFilters.tertiary_id && { tertiary_ids: [categoryFilters.tertiary_id] })
-      }
-    });
-    onSearch(response.data);
-  } catch (error) {
-    console.error("Error searching diseases:", error);
-  }
-};
 
   const handleSuggestionClick = (s) => {
     addSymptom(s);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
- const handleCategoryFilter = (filters) => {
-  // Remove keys with empty arrays for safety
-  const cleaned = {};
-  for (const key in filters) {
-    if (Array.isArray(filters[key]) && filters[key].length === 0) continue;
-    cleaned[key] = filters[key];
-  }
-  setCategoryFilters(cleaned);
-  onSearch({ symptoms: selectedSymptoms.map((s) => s.name).join(","), ...cleaned });
-};
-
+  const handleCategoryFilter = (filters) => {
+    const cleaned = {};
+    for (const key in filters) {
+      if (Array.isArray(filters[key]) && filters[key].length === 0) continue;
+      cleaned[key] = filters[key];
+    }
+    setCategoryFilters(cleaned);
+    onEnhancedSearch({
+      symptoms: selectedSymptoms.map((s) => s.name).join(","),
+      ...cleaned,
+    });
+  };
 
   return (
     <div className="search-container">
@@ -212,7 +210,6 @@ const [categoryFilters, setCategoryFilters] = useState({});
               <button
                 type="button"
                 className="chip-remove"
-                aria-label="Remove symptom"
                 onClick={() => removeSymptom(s.symptom_id)}
               >
                 ×
@@ -240,22 +237,16 @@ const [categoryFilters, setCategoryFilters] = useState({});
               type="button"
               className="clear-button"
               onClick={() => setInputValue("")}
-              aria-label="Clear input"
             >
               ×
             </button>
           )}
           <button
             type="button"
-            className={`voice-button ${isListening ? 'listening' : ''}`}
+            className={`voice-button ${isListening ? "listening" : ""}`}
             onClick={toggleVoiceRecognition}
-            aria-label="Voice input"
           >
-            {isListening ? (
-              <span className="pulse-animation">🎤</span>
-            ) : (
-              "🎤"
-            )}
+            {isListening ? <span className="pulse-animation">🎤</span> : "🎤"}
           </button>
           {showSuggestions && suggestions.length > 0 && (
             <ul className="autocomplete-dropdown">
@@ -286,13 +277,12 @@ const [categoryFilters, setCategoryFilters] = useState({});
         </div>
         <div className="search-controls">
           <button
-  className="searchbar-searchbtn"
-  type="button"
-  onClick={handleSearch}
->
-  Search for any symptom
-</button>
-
+            className="searchbar-searchbtn"
+            type="button"
+            onClick={handleSearch}
+          >
+            Search for any symptom
+          </button>
           <FilterBar onCategoryFilter={handleCategoryFilter} />
         </div>
       </form>

@@ -12,47 +12,48 @@ const API_BASE_URL = 'http://localhost:5000';
 
 const SymptomChecker = () => {
   const [searchResults, setSearchResults] = useState([]);
-  const [diseaseDetails, setDiseaseDetails] = useState(null); // New state for disease details
+  const [diseaseDetails, setDiseaseDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedDisease, setSelectedDisease] = useState(null);
   const navigate = useNavigate();
 
-  const handleSearch = async ({ symptoms, ...filters }) => {
+  // ✳️ Enhanced search handler (from updated UserPage)
+  const handleEnhancedSearch = async ({ symptoms, ...filters }) => {
     setIsLoading(true);
     try {
-      console.log("Searching with filters:", { symptoms, ...filters }); // Debug log
+      console.log("Enhanced search with filters:", { symptoms, ...filters });
       const response = await axios.get(`${API_BASE_URL}/api/search-enhanced`, {
         params: {
           term: symptoms,
           ...filters
         }
       });
-      console.log("Search results:", response.data); // Debug log
+      console.log("Enhanced search results:", response.data);
       setSearchResults(response.data);
-      setDiseaseDetails(null); // Clear any existing disease details
+      setDiseaseDetails(null);
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("Enhanced search error:", error);
       setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ✅ Optional: manual update method (can be passed to SearchBar if needed)
+  const updateResults = (results) => {
+    setSearchResults(results);
+    setDiseaseDetails(null);
+  };
 
-
-  // New function to handle disease selection
+  // Disease selection logic
   const handleDiseaseSearch = async (disease) => {
     setSelectedDisease(disease);
     setIsLoading(true);
     try {
-      // Fetch detailed information about the selected disease
       const response = await axios.get(`${API_BASE_URL}/api/diseases/${disease.disease_id}/mappings`);
-      setDiseaseDetails({
-        ...disease,
-        ...response.data
-      });
-      setSearchResults([]); // Clear symptom search results
+      setDiseaseDetails({ ...disease, ...response.data });
+      setSearchResults([]); // Clear any existing symptom search results
     } catch (error) {
       console.error("Failed to fetch disease details:", error);
       setDiseaseDetails(null);
@@ -61,14 +62,9 @@ const SymptomChecker = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      localStorage.clear();
-      window.location.assign('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      window.location.href = '/login';
-    }
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.assign('/login');
   };
 
   const toggleChatbot = () => {
@@ -83,12 +79,10 @@ const SymptomChecker = () => {
           <button className="chatbot-toggle-button" onClick={toggleChatbot}>
             {showChatbot ? 'Close Assistant' : 'Medical Assistant'}
           </button>
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </div>
-      
+
       <div className="symptom-checker">
         {showChatbot && (
           <div className="chatbot-container">
@@ -98,20 +92,22 @@ const SymptomChecker = () => {
 
         <div className={`search-section ${showChatbot ? 'collapsed' : ''}`}>
           <h2>Search Disease</h2>
-          <DiseaseSearchBar onSearch={handleDiseaseSearch} />
-          
+          <DiseaseSearchBar onUpdateResults={handleDiseaseSearch} />
+
           <h2>Search Symptoms</h2>
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar 
+            onEnhancedSearch={handleEnhancedSearch} 
+            onUpdateResults={updateResults} // Optional fallback
+          />
           {isLoading && <div className="search-loading">Searching database...</div>}
         </div>
 
         <div className={`results-section ${showChatbot ? 'collapsed' : ''}`}>
-          {/* Show disease details if available, otherwise show symptom search results */}
           {diseaseDetails ? (
             <div className="disease-details">
               <h3>{diseaseDetails.name}</h3>
               <div className="disease-mappings">
-                {diseaseDetails.symptoms && diseaseDetails.symptoms.length > 0 && (
+                {diseaseDetails.symptoms?.length > 0 && (
                   <div className="mapping-section">
                     <h4>Symptoms</h4>
                     <ul>
@@ -121,7 +117,7 @@ const SymptomChecker = () => {
                     </ul>
                   </div>
                 )}
-                {diseaseDetails.medicines && diseaseDetails.medicines.length > 0 && (
+                {diseaseDetails.medicines?.length > 0 && (
                   <div className="mapping-section">
                     <h4>Medicines</h4>
                     <ul>
@@ -131,7 +127,7 @@ const SymptomChecker = () => {
                     </ul>
                   </div>
                 )}
-                {diseaseDetails.labTests && diseaseDetails.labTests.length > 0 && (
+                {diseaseDetails.labTests?.length > 0 && (
                   <div className="mapping-section">
                     <h4>Lab Tests</h4>
                     <ul>
@@ -141,7 +137,7 @@ const SymptomChecker = () => {
                     </ul>
                   </div>
                 )}
-                {diseaseDetails.procedures && diseaseDetails.procedures.length > 0 && (
+                {diseaseDetails.procedures?.length > 0 && (
                   <div className="mapping-section">
                     <h4>Procedures</h4>
                     <ul>
