@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
 import DiseaseSearchBar from "./DiseaseSearchBar";
 import ResultsDisplay from './ResultsDisplay';
-import MedicalChatbot from './MedicalChatbot';
 import PDFExportButton from './PDFExportButton';
 import './SymptomChecker.css';
 
@@ -14,7 +13,6 @@ const SymptomChecker = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [diseaseDetails, setDiseaseDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showChatbot, setShowChatbot] = useState(false);
   const [selectedDisease, setSelectedDisease] = useState(null);
   const [searchType, setSearchType] = useState(null); // NEW: search type tracking
   const [enteredSymptoms, setEnteredSymptoms] = useState([]); // NEW: symptom tracking
@@ -74,33 +72,23 @@ const SymptomChecker = () => {
     window.location.assign('/login');
   };
 
-  const toggleChatbot = () => {
-    setShowChatbot(!showChatbot);
-  };
+  
+
 
   return (
     <div className="symptom-checker-container">
       <div className="user-header">
         <h2>TridoshaRx</h2>
         <div className="header-buttons">
-          <button className="chatbot-toggle-button" onClick={toggleChatbot}>
-            {showChatbot ? 'Close Assistant' : 'Medical Assistant'}
-          </button>
           <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </div>
 
       <div className="symptom-checker">
-        {showChatbot && (
-          <div className="chatbot-container">
-            <MedicalChatbot />
-          </div>
-        )}
 
-        <div className={`search-section ${showChatbot ? 'collapsed' : ''}`}>
+        <div className={`search-section`}>
           <h2>Search Disease</h2>
-          <DiseaseSearchBar onUpdateResults={handleDiseaseSearch} />
-
+          <DiseaseSearchBar onSearch={handleDiseaseSearch} />
           <h2>Search Symptoms</h2>
           <SearchBar 
             onEnhancedSearch={handleEnhancedSearch} 
@@ -110,7 +98,7 @@ const SymptomChecker = () => {
           {isLoading && <div className="search-loading">Searching database...</div>}
         </div>
 
-        <div className={`results-section ${showChatbot ? 'collapsed' : ''}`}>
+        <div className={`results-section`}>
           {diseaseDetails ? (
             <div className="disease-details">
               <h3>{diseaseDetails.name}</h3>

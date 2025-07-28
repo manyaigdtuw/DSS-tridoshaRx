@@ -4,7 +4,7 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
-import chatbotRouter from './chatbot.js';
+
 
 import { authenticateToken } from './authMiddleware.js';
 const app = express();
@@ -16,7 +16,7 @@ app.use(express.json());
 const JWT_SECRET = 'ihopeyoudontmindlookingatthis';
 
 
-app.use('/api/chatbot', chatbotRouter);
+
 
 app.get('/api/map-symptoms', async (req, res) => {
   try {
