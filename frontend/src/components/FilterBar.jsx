@@ -119,7 +119,7 @@ export default function FilterBar({ onCategoryFilter }) {
     <div className="filter-bar">
       {/* Category Type Multi-select */}
       <div className="filter-section" style={{ minWidth: 170 }}>
-        <label>Category Type:</label>
+        <label>Classifier</label>
         <MultiSelect
           options={mapOptions(categoryTypes, "type_name", "id")}
           value={selectedTypes}
@@ -133,7 +133,7 @@ export default function FilterBar({ onCategoryFilter }) {
       </div>
       {/* Category Multi-select */}
       <div className="filter-section" style={{ minWidth: 170 }}>
-        <label>Category:</label>
+        <label>Category level 1</label>
         <MultiSelect
           options={mapOptions(categories, "category_name", "id")}
           value={selectedCategories}
@@ -147,7 +147,7 @@ export default function FilterBar({ onCategoryFilter }) {
       </div>
       {/* Subcategory Multi-select */}
       <div className="filter-section" style={{ minWidth: 170 }}>
-        <label>Subcategory:</label>
+        <label>category level 2</label>
         <MultiSelect
           options={mapOptions(subcategories, "subcategory_name", "id")}
           value={selectedSubcategories}
@@ -161,7 +161,7 @@ export default function FilterBar({ onCategoryFilter }) {
       </div>
       {/* Tertiary Multi-select */}
       <div className="filter-section" style={{ minWidth: 170 }}>
-        <label>Tertiary:</label>
+        <label>category level 3</label>
         <MultiSelect
           options={mapOptions(tertiaryCategories, "tertiary_name", "id")}
           value={selectedTertiaries}
