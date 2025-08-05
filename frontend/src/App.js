@@ -9,6 +9,7 @@ import {
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import ContactUs from './components/ContactUs';
 import MappingPage from './components/Diseasemap';
 import SymptomChecker from './components/UserPage';
 import AddEntryPage from './components/AddEntryPage';
@@ -237,11 +238,14 @@ const App = () => {
           </Route>
 
           {/* User Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<UserLayout />}>
-              <Route path="/user-page" element={<SymptomChecker />} />
-            </Route>
-          </Route>
+            <Route element={<ProtectedRoute />}>
+    <Route element={<UserLayout />}>
+      <Route path="/user-page" element={<SymptomChecker />} />
+      <Route path="/contact" element={<ContactUs />} />
+      
+    </Route>
+  </Route>
+
 
           {/* Default route logic */}
           <Route
