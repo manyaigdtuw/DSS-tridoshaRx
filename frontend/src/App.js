@@ -10,6 +10,7 @@ import {
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ContactUs from './components/ContactUs';
+import AboutUs from './components/AboutUs';
 import MappingPage from './components/Diseasemap';
 import SymptomChecker from './components/UserPage';
 import AddEntryPage from './components/AddEntryPage';
@@ -242,6 +243,7 @@ const App = () => {
     <Route element={<UserLayout />}>
       <Route path="/user-page" element={<SymptomChecker />} />
       <Route path="/contact" element={<ContactUs />} />
+      <Route path="/about" element={<AboutUs />} />
       
     </Route>
   </Route>

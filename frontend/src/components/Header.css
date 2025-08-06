@@ -1,0 +1,97 @@
+/* ===== New Navigation Bar Styles ===== */
+.govt-navbar {
+  background-color: #fff;
+  padding: 10px 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #eaeaea;
+}
+
+.govt-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.govt-logo-text {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+
+.govt-nav-links {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+}
+
+.govt-nav-link {
+  color: #333;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.govt-nav-link:hover {
+  color: #2563eb;
+}
+
+.govt-nav-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.govt-nav-button:hover {
+  background-color: #c0392b;
+}
+
+@media (max-width: 768px) {
+  .govt-navbar {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .govt-nav-links {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+}
+/* Add this to your existing CSS */
+.govt-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.govt-logo-img {
+  height: 50px; /* Adjust based on your logo's aspect ratio */
+  width: auto;
+}
+
+.govt-logo-text {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.govt-logo-text small {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: normal;
+}
+
+/* Keep all your existing .govt-navbar and other styles */

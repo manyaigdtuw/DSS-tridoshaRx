@@ -5,8 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
 import DiseaseSearchBar from "./DiseaseSearchBar";
 import ResultsDisplay from './ResultsDisplay';
-import ayushLogo from './AyushLogo.png'; // Update with your actual path
 import Footer from './Footer';  
+import Header from './Header';  
+
+import ayushLogo from './AyushLogo.png'; // Update with your actual path
+
 
 import PDFExportButton from './PDFExportButton';
 import './SymptomChecker.css';
@@ -83,36 +86,7 @@ const SymptomChecker = () => {
   return (
     <div className="symptom-checker-container">
         <div className="full-width-bleed">
-        <nav className="govt-navbar">
-          <div className="govt-logo-container">
-            <img src={ayushLogo} alt="Ministry of Ayush Logo" className="govt-logo-img" />
-            <div className="govt-logo-text">
-              Central Council for Research in Ayurvedic Sciences
-              <small>Ministry of Ayush, Government of India</small>
-            </div>
-          </div>
-          <div className="govt-nav-links">
-  <Link 
-    to="/user-page" 
-    className={`govt-nav-link ${location.pathname === '/user-page' ? 'active' : ''}`}
-  >
-    Home
-  </Link>
-  <Link 
-    to="/about" 
-    className={`govt-nav-link ${location.pathname === '/about' ? 'active' : ''}`}
-  >
-    About Us
-  </Link>
-  <Link 
-    to="/contact" 
-    className={`govt-nav-link ${location.pathname === '/contact' ? 'active' : ''}`}
-  >
-    Contact Us
-  </Link>
-  <button className="govt-nav-button" onClick={handleLogout}>Logout</button>
-</div>
-        </nav>
+        <Header />
       </div>
       <div className="symptom-checker">
 
