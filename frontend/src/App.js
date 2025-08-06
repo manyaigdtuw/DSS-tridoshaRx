@@ -241,7 +241,7 @@ const App = () => {
           {/* User Routes */}
             <Route element={<ProtectedRoute />}>
     <Route element={<UserLayout />}>
-      <Route path="/user-page" element={<SymptomChecker />} />
+    <Route path="/user-page" element={<SymptomChecker onLogout={handleLogout} />} />
       <Route path="/contact" element={<ContactUs />} />
       <Route path="/about" element={<AboutUs />} />
       

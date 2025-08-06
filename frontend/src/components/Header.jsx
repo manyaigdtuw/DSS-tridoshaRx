@@ -1,10 +1,17 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Header.css';
-import ayushLogo from './AyushLogo.png'; // Update with your actual path
+import ayushLogo from './AyushLogo.png';
 
-const Header = ({ handleLogout }) => {
+const Header = ({ onLogout }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    if (onLogout) onLogout(); // ✅ this will update App.js state
+    navigate('/login');
+  };
 
   return (
     <div className="full-width-bleed">

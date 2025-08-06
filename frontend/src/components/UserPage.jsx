@@ -16,7 +16,8 @@ import './SymptomChecker.css';
 
 const API_BASE_URL = 'https://dss-tridosharx.onrender.com';
 
-const SymptomChecker = () => {
+const SymptomChecker = ({ onLogout }) => {
+  
    const [activeTab, setActiveTab] = useState('home');
   const [searchResults, setSearchResults] = useState([]);
   const [diseaseDetails, setDiseaseDetails] = useState(null);
@@ -27,16 +28,22 @@ const SymptomChecker = () => {
 
   const navigate = useNavigate();
 
-  // ✳️ Enhanced search handler (from updated SearchBar)
   const handleEnhancedSearch = async ({ symptoms, ...filters }) => {
     setIsLoading(true);
     try {
+      if (!symptoms || symptoms.trim() === '') {
+  console.warn("Skipping search: No symptoms entered");
+  setIsLoading(false);
+  return;
+}
+
       console.log("Enhanced search with filters:", { symptoms, ...filters });
       const response = await axios.get(`${API_BASE_URL}/api/search-enhanced`, {
         params: {
           term: symptoms,
           ...filters
         }
+
       });
       console.log("Enhanced search results:", response.data);
       setSearchResults(response.data);
@@ -75,18 +82,11 @@ const SymptomChecker = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.assign('/login');
-  };
-
-  
-
 
   return (
     <div className="symptom-checker-container">
         <div className="full-width-bleed">
-        <Header />
+        <Header onLogout={onLogout} /> {/* ✅ pass it here */}
       </div>
       <div className="symptom-checker">
 
