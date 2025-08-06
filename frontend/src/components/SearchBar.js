@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./SearchBar.css";
+import { FaMicrophone } from "react-icons/fa"; // or use MdMic from 'react-icons/md'
 import FilterBar from "./FilterBar";
 
 const API_BASE_URL = "https://dss-tridosharx.onrender.com";
@@ -154,7 +155,6 @@ const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
     }
   };
 
-  // ✅ UPDATED: handleSearch with enteredSymptoms included
   const handleSearch = async () => {
     if (!selectedSymptoms.length) {
       alert("Please select at least one symptom.");
@@ -246,12 +246,19 @@ const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
             </button>
           )}
           <button
-            type="button"
-            className={`voice-button ${isListening ? "listening" : ""}`}
-            onClick={toggleVoiceRecognition}
-          >
-            {isListening ? <span className="pulse-animation">🎤</span> : "🎤"}
-          </button>
+  type="button"
+  className={`voice-button ${isListening ? "listening" : ""}`}
+  onClick={toggleVoiceRecognition}
+>
+  {isListening ? (
+    <span className="pulse-animation">
+      <FaMicrophone />
+    </span>
+  ) : (
+    <FaMicrophone />
+  )}
+</button>
+
           {showSuggestions && suggestions.length > 0 && (
             <ul className="autocomplete-dropdown">
               {suggestions.map((s, idx) => (
