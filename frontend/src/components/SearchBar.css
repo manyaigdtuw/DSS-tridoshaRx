@@ -205,10 +205,10 @@
   }
   
   .searchbar-searchbtn {
+    margin-top: 50px;
     width: 100%;
   }
 }
-/* Add these styles to your existing SearchBar.css */
 
 .filter-bar {
   display: flex;

@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import './AdminExportMappings.css';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://dss-tridosharx.onrender.com';
 
 const AdminExportMappings = () => {
   const [isLoading, setIsLoading] = React.useState(false);

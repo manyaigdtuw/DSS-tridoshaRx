@@ -25,7 +25,7 @@ const RoleManagement = () => {
   const fetchUsers = async () => {
     try {
       console.log('Fetching users...');
-      const response = await axios.get('http://localhost:5000/api/users', {
+      const response = await axios.get('https://dss-tridosharx.onrender.com/api/users', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -45,7 +45,7 @@ const RoleManagement = () => {
     try {
       console.log(`Updating user ${userId} role to ${newRole}...`);
       await axios.put(
-        'http://localhost:5000/api/users/role',
+        'https://dss-tridosharx.onrender.com/api/users/role',
         { user_id: userId, role: newRole },
         {
           headers: {

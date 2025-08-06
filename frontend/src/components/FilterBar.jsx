@@ -4,7 +4,7 @@ import axios from 'axios';
 import { MultiSelect } from "react-multi-select-component";
 import './SearchBar.css';
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://dss-tridosharx.onrender.com";
 
 // Helper for select options
 const mapOptions = (list, labelKey = "name", valueKey = "id") =>

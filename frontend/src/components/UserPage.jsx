@@ -14,7 +14,7 @@ import ayushLogo from './AyushLogo.png'; // Update with your actual path
 import PDFExportButton from './PDFExportButton';
 import './SymptomChecker.css';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://dss-tridosharx.onrender.com';
 
 const SymptomChecker = () => {
    const [activeTab, setActiveTab] = useState('home');

@@ -8,7 +8,7 @@ const Login = ({ onLogin }) => {
 
 const handleLogin = async (data) => {
   try {
-    const response = await axios.post('http://localhost:5000/api/login', {
+    const response = await axios.post('https://dss-tridosharx.onrender.com/api/login', {
       email: data.email,
       password: data.password
     });

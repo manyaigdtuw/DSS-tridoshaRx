@@ -25,7 +25,7 @@ const AddEntryPage = () => {
     setIsLoading(true);
     
     try {
-      const res = await axios.post('http://localhost:5000/api/add-entry', { type, name });
+      const res = await axios.post('https://dss-tridosharx.onrender.com/api/add-entry', { type, name });
       setMessage(res.data.message);
       setName('');
     } catch (err) {

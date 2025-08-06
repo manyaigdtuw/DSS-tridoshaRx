@@ -345,4 +345,16 @@ body {
   font-weight: normal;
 }
 
-/* Keep all your existing .govt-navbar and other styles */
+/* Add these to SymptomChecker.css */
+.search-container {
+  margin: 0 0 20px 0; /* Remove top margin, keep bottom */
+}
+
+.search-section {
+  padding: 20px; /* Reduce padding if needed */
+  gap: 20px; /* Reduce gap between elements */
+}
+
+.search-section h2 {
+  margin-top: 0; /* Remove default h2 margin */
+}

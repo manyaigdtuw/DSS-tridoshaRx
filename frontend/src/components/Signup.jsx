@@ -8,7 +8,7 @@ const Signup = ({ onSignup }) => {
 
   const handleSignup = async (data) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/register', data);
+      const response = await axios.post('https://dss-tridosharx.onrender.com/api/register', data);
       
       alert('Registration successful! Please login with your credentials.');
       navigate('/login');

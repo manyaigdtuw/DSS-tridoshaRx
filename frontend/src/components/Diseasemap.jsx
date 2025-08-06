@@ -3,7 +3,7 @@ import axios from 'axios';
 import './Diseasemap.css'; 
 
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://dss-tridosharx.onrender.com';
 const MappingPage = () => {
   const [diseases, setDiseases] = useState([]);
   const [selectedDisease, setSelectedDisease] = useState('');

@@ -72,7 +72,7 @@ const App = () => {
 
       for (const endpoint of endpoints) {
         try {
-          const response = await fetch(`http://localhost:5000${endpoint.url}`, {
+          const response = await fetch(`https://dss-tridosharx.onrender.com${endpoint.url}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }

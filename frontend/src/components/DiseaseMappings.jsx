@@ -28,7 +28,7 @@ const DiseaseMappings = () => {
   const fetchMappings = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/export-mappings', {
+      const response = await axios.get('https://dss-tridosharx.onrender.com/api/export-mappings', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },

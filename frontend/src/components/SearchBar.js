@@ -3,7 +3,7 @@ import axios from "axios";
 import "./SearchBar.css";
 import FilterBar from "./FilterBar";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://dss-tridosharx.onrender.com";
 
 const SearchBar = ({ onEnhancedSearch, onUpdateResults }) => {
   const [inputValue, setInputValue] = useState("");
