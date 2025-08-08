@@ -897,19 +897,7 @@ app.post('/api/add-entry', async (req, res) => {
     res.status(500).json({ error: 'Failed to add entry' });
   }
 });
-// ------------------------------------------------------------------
-// GET /api/diseases/by-category
-// Returns every disease that belongs to the supplied hierarchy
-// (categorytype, category, subcategory, tertiary) together with
-// an ARRAY of its symptom objects {symptom_id, name}.
-// If no filter is given the whole catalogue is returned.
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// GET /api/diseases/by-category
-// Returns every disease that belongs to the supplied hierarchy
-// (categorytype, category, subcategory, tertiary) together with
-// an ARRAY of its symptom objects {symptom_id, name}.
-// ------------------------------------------------------------------
+
 app.get('/api/diseases/by-category', async (req, res) => {
   const getQueryArray = (req, key) => {
     const raw = req.query[key] || req.query[`${key}[]`];
@@ -918,18 +906,18 @@ app.get('/api/diseases/by-category', async (req, res) => {
   };
 
   try {
-    // ---------- 1️⃣ Parse filter arrays ----------
+    
     const catTypeArr = getQueryArray(req, 'categorytype_ids').map(Number);
     const catArr     = getQueryArray(req, 'category_ids').map(Number);
     const subArr     = getQueryArray(req, 'subcategory_ids').map(Number);
     const tertArr    = getQueryArray(req, 'tertiary_ids').map(Number);
 
-    // ---------- 2️⃣ Build dynamic SQL ----------
+    
     const params = [];
-    let joinClause = '';                // <-- correct variable name
+    let joinClause = '';                
     const whereClauses = [];
 
-    // If there is at least one filter we need the mapping table
+    
     if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
       joinClause = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
 
@@ -937,7 +925,7 @@ app.get('/api/diseases/by-category', async (req, res) => {
         params.push(catTypeArr);
         whereClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
       }
-      if (catArr.length) {                     // <-- **fixed** (was `cat.length`)
+      if (catArr.length) {                    
         params.push(catArr);
         whereClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
       }
@@ -955,7 +943,7 @@ app.get('/api/diseases/by-category', async (req, res) => {
       ? `WHERE ${whereClauses.join(' AND ')}`
       : '';
 
-    // ---------- 3️⃣ Final query ----------
+    // ----------  Final query bubbglegums ----------
     const sql = `
       SELECT
         d.disease_id,

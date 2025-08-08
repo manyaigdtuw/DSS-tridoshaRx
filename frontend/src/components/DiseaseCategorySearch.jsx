@@ -1,11 +1,10 @@
-/* ------------------------------------------------------------
-   DiseaseCategorySearch.jsx
-   ------------------------------------------------------------ */
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import FilterBar from './FilterBar';
 import './DiseaseCategorySearch.css';
 import ResultCard from './ResultCard';
+import Header from './Header'; // ✅ Make sure Header is in the same folder or update the path accordingly
+import Footer from './Footer';
 import PDFExportButton from './PDFExportButton';
 
 const API_BASE_URL = 'https://dss-tridosharx.onrender.com';
@@ -18,14 +17,13 @@ const DiseaseCategorySearch = () => {
     subcategory_ids: [],
     tertiary_ids: [],
   });
-  const [diseases, setDiseases] = useState([]);               // [{disease_id, disease, symptoms:[…]}]
-  const [uniqueSymptoms, setUniqueSymptoms] = useState([]);    // [{symptom_id, name}]
+  const [diseases, setDiseases] = useState([]);               
+  const [uniqueSymptoms, setUniqueSymptoms] = useState([]);    
   const [selectedSymptomIds, setSelectedSymptomIds] = useState([]);
   const [diagnosis, setDiagnosis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  /* ---------- FETCH diseases when filters change ---------- */
   const fetchDiseases = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -33,11 +31,10 @@ const DiseaseCategorySearch = () => {
       const resp = await axios.get(`${API_BASE_URL}/api/diseases/by-category`, {
         params: filters,
       });
-      const fetched = resp.data; // array of disease objects
+      const fetched = resp.data; 
 
       setDiseases(fetched);
 
-      // Build a deduped symptom list from the returned diseases
       const symptomMap = {};
       fetched.forEach(d => {
         d.symptoms.forEach(s => {
@@ -55,56 +52,52 @@ const DiseaseCategorySearch = () => {
     }
   }, [filters]);
 
-  // run on first render and every time filters change
   useEffect(() => {
     fetchDiseases();
   }, [fetchDiseases]);
 
-  // ---- IMPORTANT: clear old selections when the hierarchy changes ----
   useEffect(() => {
-    // user switched category → old symptom picks are no longer valid
     setSelectedSymptomIds([]);
     setDiagnosis(null);
   }, [filters]);
 
-  /* ---------- Symptom checkbox toggle ---------- */
   const toggleSymptom = (sid) => {
     setSelectedSymptomIds(prev =>
       prev.includes(sid) ? prev.filter(id => id !== sid) : [...prev, sid]
     );
   };
 
-  /* ---------- Diagnose logic ---------- */
-  const diagnose = () => {
-    // Compute match count for each disease
-    const withMatch = diseases.map(d => {
-      const diseaseSymIds = d.symptoms.map(s => s.symptom_id);
-      const hitCount = selectedSymptomIds.filter(id => diseaseSymIds.includes(id)).length;
-      return { disease: d, hitCount };
-    });
+const diagnose = () => {
+  const withMatch = diseases.map(d => {
+    const diseaseSymIds = d.symptoms.map(s => s.symptom_id);   
 
-    const maxHit = Math.max(...withMatch.map(m => m.hitCount));
-    const best = withMatch.filter(m => m.hitCount === maxHit && maxHit > 0);
+    const hitCount = selectedSymptomIds.filter(id =>
+      diseaseSymIds.includes(id)
+    ).length;   
 
-    setDiagnosis({
-      results: best,
-      selectedCount: selectedSymptomIds.length,
-    });
-  };
+    return { disease: d, hitCount };
+  });
 
-  /* ---------- Render ---------- */
+  const filtered = withMatch.filter(m => m.hitCount >= 1);   
+  filtered.sort((a, b) => b.hitCount - a.hitCount);
+
+  setDiagnosis({
+    results: filtered,                
+    selectedCount: selectedSymptomIds.length   
+  });
+};
   return (
     <div className="disease-cat-search">
-      <h2>Disease Search by Category</h2>
+      <div className="full-width-bleed">
+        <Header />
+      </div>
+      
 
-      {/* ---- Category filters (reuse your FilterBar) ---- */}
       <FilterBar onCategoryFilter={setFilters} />
 
-      {/* ---- Loading / error feedback ---- */}
       {loading && <p className="info">Loading diseases …</p>}
       {error && <p className="error">{error}</p>}
 
-      {/* ---- Symptom checklist (only when we have symptoms) ---- */}
       {uniqueSymptoms.length > 0 && (
         <div className="symptom-checklist">
           <h3>Select Symptoms</h3>
@@ -131,7 +124,6 @@ const DiseaseCategorySearch = () => {
         </div>
       )}
 
-      {/* ---- Diagnosis result (if any) ---- */}
       {diagnosis && (
         <div className="diagnosis-results">
           {diagnosis.results.length > 0 ? (
@@ -164,7 +156,11 @@ const DiseaseCategorySearch = () => {
           )}
         </div>
       )}
+       <div className="full-width-bleed" style={{ marginTop: '40px' }}>
+    <Footer />
+  </div>
     </div>
+    
   );
 };
 

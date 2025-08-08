@@ -1,16 +1,15 @@
-/* -------------------------------------------------
-   DiseaseCategorySearch – layout & colours
-   ------------------------------------------------- */
 .disease-cat-search {
-  padding: 20px;
+  padding-top: 0;           /* or omit – 0 is the default */
+  padding-bottom: 0;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
-/* FilterBar already has a margin; give a little breathing room */
+
 .disease-cat-search .filter-bar {
   margin-bottom: 20px;
 }
 
-/* ---- Symptom checklist ------------------------ */
 .symptom-checklist {
   margin-top: 30px;
 }
@@ -51,7 +50,6 @@
   margin-right: 6px;
 }
 
-/* ---- Diagnose button -------------------------- */
 .diagnose-btn {
   margin-top: 16px;
   padding: 10px 22px;
@@ -71,7 +69,6 @@
   background: #1d4ed8;
 }
 
-/* ---- Diagnosis result -------------------------- */
 .diagnosis-results {
   margin-top: 30px;
 }
@@ -82,7 +79,6 @@
   margin-top: 12px;
 }
 
-/* small “no disease matched” message */
 .no-match {
   font-style: italic;
   color: #555;
