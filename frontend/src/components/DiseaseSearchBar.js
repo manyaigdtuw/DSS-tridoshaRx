@@ -12,7 +12,7 @@ const DiseaseSearchBar = ({ onSearch }) => {
   const inputRef = useRef();
   const containerRef = useRef();
 
-  // Fetch disease suggestions
+  
   useEffect(() => {
     if (!inputValue.trim()) {
       setSuggestions([]);
