@@ -106,27 +106,32 @@ const DiseaseCategorySearch = () => {
       {error && <p className="error">{error}</p>}
 
       {/* ---------- Symptom checklist (multi‑checkbox) ---- */}
-      {uniqueSymptoms.length > 0 && (
-        <div className="symptom-checklist">
-          <h3>Select Symptoms</h3>
-          <div className="checkbox-grid">
-            {uniqueSymptoms.map(sym => (
-              <label key={sym.symptom_id} className="sym-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedSymptomIds.includes(sym.symptom_id)}
-                  onChange={() => toggleSymptom(sym.symptom_id)}
-                />
-                {sym.name}
-              </label>
-            ))}
-          </div>
-          <button className="diagnose-btn" onClick={diagnose} disabled={!selectedSymptomIds.length}>
-            Diagnose
-          </button>
-        </div>
-      )}
+      {/* ---------- Symptom checklist (multi‑checkbox) ---- */}
+{uniqueSymptoms.length > 0 && (
+  <div className="symptom-checklist">
+    <h3>Select Symptoms</h3>
+    <div className="checkbox-grid">
+      {uniqueSymptoms.map(sym => (
+        <label key={sym.symptom_id} className="sym-checkbox">
+          <input
+            type="checkbox"
+            checked={selectedSymptomIds.includes(sym.symptom_id)}
+            onChange={() => toggleSymptom(sym.symptom_id)}
+          />
+          {sym.name}
+        </label>
+      ))}
+    </div>
 
+ <button
+      className="diagnose-btn"
+      onClick={diagnose}
+      disabled={!selectedSymptomIds.length}
+    >
+      Diagnose
+    </button>
+  </div>
+)}
       {/* ---------- Diagnosis result ----------------------- */}
       {diagnosis && (
         <div className="diagnosis-results">

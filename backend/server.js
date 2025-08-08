@@ -897,7 +897,6 @@ app.post('/api/add-entry', async (req, res) => {
     res.status(500).json({ error: 'Failed to add entry' });
   }
 });
-
 // ------------------------------------------------------------------
 // GET /api/diseases/by-category
 // Returns every disease that belongs to the supplied hierarchy
@@ -908,29 +907,31 @@ app.post('/api/add-entry', async (req, res) => {
 app.get('/api/diseases/by-category', async (req, res) => {
   const getQueryArray = (req, key) => {
     const raw = req.query[key] || req.query[`${key}[]`];
-    if(!raw) return [];
+    if (!raw) return [];
     return Array.isArray(raw) ? raw : raw.split(',').filter(Boolean);
   };
 
   try {
-    // ----- 1️⃣ parse filters -------------------------------------------------
+    // ---------- 1️⃣ Parse filter arrays ----------
     const catTypeArr = getQueryArray(req, 'categorytype_ids').map(Number);
     const catArr     = getQueryArray(req, 'category_ids').map(Number);
     const subArr     = getQueryArray(req, 'subcategory_ids').map(Number);
     const tertArr    = getQueryArray(req, 'tertiary_ids').map(Number);
 
-    // ----- 2️⃣ build dynamic parts -------------------------------------------
+    // ---------- 2️⃣ Build dynamic SQL parts ----------
     const params = [];
-    let joinClause = '';
+    let joinClause = '';                // ← <-- this is the variable we will use later
     const whereClauses = [];
 
     if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
-     Clause = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
+      // we need the mapping table only when a filter is present
+      joinClause = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
+
       if (catTypeArr.length) {
         params.push(catTypeArr);
         whereClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
       }
-      if (catArr.length) {
+      if (cat.length) {
         params.push(catArr);
         whereClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
       }
@@ -944,9 +945,11 @@ app.get('/api/diseases/by-category', async (req, res) => {
       }
     }
 
-    const filterSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const filterSQL = whereClauses.length
+      ? `WHERE ${whereClauses.join(' AND ')}`
+      : '';
 
-    // ----- 3️⃣ final query ----------------------------------------------------
+    // ---------- 3️⃣ Final query ----------
     const sql = `
       SELECT
         d.disease_id,
@@ -967,10 +970,11 @@ app.get('/api/diseases/by-category', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error in /api/diseases/by-category:', err);
-    res.status(500).json({ error: 'Failed to fetch diseases', details: err.message });
+    res
+      .status(500)
+      .json({ error: 'Failed to fetch diseases', details: err.message });
   }
 });
-
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
