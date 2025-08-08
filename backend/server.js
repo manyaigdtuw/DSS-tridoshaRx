@@ -898,6 +898,78 @@ app.post('/api/add-entry', async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------------
+// GET /api/diseases/by-category
+// Returns every disease that belongs to the supplied hierarchy
+// (categorytype, category, subcategory, tertiary) together with
+// an ARRAY of its symptom objects {symptom_id, name}.
+// If no filter is given the whole catalogue is returned.
+// ------------------------------------------------------------------
+app.get('/api/diseases/by-category', async (req, res) => {
+  const getQueryArray = (req, key) => {
+    const raw = req.query[key] || req.query[`${key}[]`];
+    if(!raw) return [];
+    return Array.isArray(raw) ? raw : raw.split(',').filter(Boolean);
+  };
+
+  try {
+    // ----- 1️⃣ parse filters -------------------------------------------------
+    const catTypeArr = getQueryArray(req, 'categorytype_ids').map(Number);
+    const catArr     = getQueryArray(req, 'category_ids').map(Number);
+    const subArr     = getQueryArray(req, 'subcategory_ids').map(Number);
+    const tertArr    = getQueryArray(req, 'tertiary_ids').map(Number);
+
+    // ----- 2️⃣ build dynamic parts -------------------------------------------
+    const params = [];
+    let joinClause = '';
+    const whereClauses = [];
+
+    if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
+     Clause = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
+      if (catTypeArr.length) {
+        params.push(catTypeArr);
+        whereClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
+      }
+      if (catArr.length) {
+        params.push(catArr);
+        whereClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
+      }
+      if (subArr.length) {
+        params.push(subArr);
+        whereClauses.push(`dcm.subcategory_id = ANY($${params.length}::int[])`);
+      }
+      if (tertArr.length) {
+        params.push(tertArr);
+        whereClauses.push(`dcm.tertiary_id = ANY($${params.length}::int[])`);
+      }
+    }
+
+    const filterSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // ----- 3️⃣ final query ----------------------------------------------------
+    const sql = `
+      SELECT
+        d.disease_id,
+        d.name AS disease,
+        ARRAY(
+          SELECT json_build_object('symptom_id', s.symptom_id, 'name', s.name)
+          FROM diseasesymptoms ds
+          JOIN symptoms s ON ds.symptom_id = s.symptom_id
+          WHERE ds.disease_id = d.disease_id
+        ) AS symptoms
+      FROM diseases d
+      ${joinClause}
+      ${filterSQL}
+      ORDER BY d.name;
+    `;
+
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error in /api/diseases/by-category:', err);
+    res.status(500).json({ error: 'Failed to fetch diseases', details: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 

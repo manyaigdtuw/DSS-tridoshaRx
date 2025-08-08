@@ -1,0 +1,68 @@
+.disease-cat-search {
+  padding: 20px;
+}
+
+/* ---------- checklist ---------------------------------------------------- */
+.symptom-checklist {
+  margin-top: 30px;
+}
+.symptom-checklist h3 {
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  color: #2d3748;
+}
+.checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+.sym-checkbox {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.94rem;
+  cursor: pointer;
+}
+.sym-checkbox input {
+  margin-right: 6px;
+}
+
+/* ---------- diagnose button --------------------------------------------- */
+.diagnose-btn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dose-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+.diagnose-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+/* ---------- diagnosis results -------------------------------------------- */
+.diagnosis-results {
+  margin-top: 30px;
+}
+.cards-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}

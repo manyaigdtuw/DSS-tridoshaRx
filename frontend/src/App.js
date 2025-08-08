@@ -11,6 +11,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ContactUs from './components/ContactUs';
 import AboutUs from './components/AboutUs';
+import DiseaseCategorySearch from './components/DiseaseCategorySearch';
 import MappingPage from './components/Diseasemap';
 import SymptomChecker from './components/UserPage';
 import AddEntryPage from './components/AddEntryPage';
@@ -244,6 +245,8 @@ const App = () => {
     <Route path="/user-page" element={<SymptomChecker onLogout={handleLogout} />} />
       <Route path="/contact" element={<ContactUs />} />
       <Route path="/about" element={<AboutUs />} />
+      <Route path="/disease-search" element={<DiseaseCategorySearch />} />
+
       
     </Route>
   </Route>

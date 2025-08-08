@@ -42,6 +42,12 @@ const Header = ({ onLogout }) => {
           >
             Contact Us
           </Link>
+          <Link 
+            to="/disease-search" 
+            className={`govt-nav-link ${location.pathname === '/disease-search' ? 'active' : ''}`}
+          >
+            Category specific search
+          </Link>
           <button className="govt-nav-button" onClick={handleLogout}>Logout</button>
         </div>
       </nav>
