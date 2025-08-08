@@ -1,0 +1,81 @@
+/* -------------------------------------------------
+   ResultCard – a single disease result card
+   ------------------------------------------------- */
+.result-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #eaeaea;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---- Section title (Disease, Symptoms, …) ---- */
+.result-section {
+  margin-bottom: 15px;
+}
+.result-section:last-child {
+  margin-bottom: 0;
+}
+.section-title {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #5b46c5;
+}
+
+/* ---- Disease name (big and coloured) ---- */
+.disease-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #a81c1c;
+  background: #f5f5f5;
+}
+
+/* ---- Match‑info badge (e.g. 3/5) ---- */
+.match-info {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: #444;
+  background: #f0f4ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ---- Horizontal list of pills (symptoms, medicines…) ---- */
+.horizontal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.list-item.pill {
+  background: #f5f5f5;
+  color: #444;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ---- Lifestyle pill – green theme ---- */
+.list-item.pill.lifestyle {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #2e7d32;
+}
+.list-item.pill.lifestyle:hover {
+  background: #c8e6c9;
+}
+
+/* ---- Hover effect for the whole card ---- */
+.result-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}

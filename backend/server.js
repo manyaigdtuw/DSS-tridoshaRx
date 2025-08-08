@@ -904,6 +904,12 @@ app.post('/api/add-entry', async (req, res) => {
 // an ARRAY of its symptom objects {symptom_id, name}.
 // If no filter is given the whole catalogue is returned.
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// GET /api/diseases/by-category
+// Returns every disease that belongs to the supplied hierarchy
+// (categorytype, category, subcategory, tertiary) together with
+// an ARRAY of its symptom objects {symptom_id, name}.
+// ------------------------------------------------------------------
 app.get('/api/diseases/by-category', async (req, res) => {
   const getQueryArray = (req, key) => {
     const raw = req.query[key] || req.query[`${key}[]`];
@@ -918,20 +924,20 @@ app.get('/api/diseases/by-category', async (req, res) => {
     const subArr     = getQueryArray(req, 'subcategory_ids').map(Number);
     const tertArr    = getQueryArray(req, 'tertiary_ids').map(Number);
 
-    // ---------- 2️⃣ Build dynamic SQL parts ----------
+    // ---------- 2️⃣ Build dynamic SQL ----------
     const params = [];
-    let joinClause = '';                // ← <-- this is the variable we will use later
+    let joinClause = '';                // <-- correct variable name
     const whereClauses = [];
 
+    // If there is at least one filter we need the mapping table
     if (catTypeArr.length || catArr.length || subArr.length || tertArr.length) {
-      // we need the mapping table only when a filter is present
       joinClause = `JOIN diseasecategorymapping dcm ON d.disease_id = dcm.disease_id`;
 
       if (catTypeArr.length) {
         params.push(catTypeArr);
         whereClauses.push(`dcm.categorytype_id = ANY($${params.length}::int[])`);
       }
-      if (cat.length) {
+      if (catArr.length) {                     // <-- **fixed** (was `cat.length`)
         params.push(catArr);
         whereClauses.push(`dcm.category_id = ANY($${params.length}::int[])`);
       }
